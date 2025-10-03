@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: smart--workshop
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://mysql5.sqlpub.com:3310/smart_workshop
+    username: yzyxtax
+    password: r6L4mWZUkYczMzQu
+
+mybatis:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    map-underscore-to-camel-case: true
+
+logging:
+  level:
+    org.springframework.jdbc.support.JdbcTransactionManager: debug
