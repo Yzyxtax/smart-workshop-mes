@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.ac.cn//DTD Mapper 3.0//EN"
+        "https://mybatis.ac.cn/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xtax.mapper.equipmentMapper">
+<!--    条件分页查询设备信息-->
+    <select id="getAllEquipment" resultType="com.xtax.pojo.Equipment">
+        select * from equipment_info
+        <where>
+            <if test="name != null">
+                and name like '%${name}%'
+            </if>
+            <if test="type != null">
+                and type like '%${type}%'
+            </if>
+            <if test="model != null">
+                and model like '%${model}%'
+            </if>
+        </where>
+        order by production_date desc
+    </select>
+<!--    根据id查询设备信息-->
+    <resultMap id="equip" type="com.xtax.pojo.Equipment">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="type" column="type"/>
+        <result property="model" column="model"/>
+        <result property="productionDate" column="production_date"/>
+        <result property="manufacturer" column="manufacturer"/>
+        <collection property="functionDescription" ofType="string">
+            <result property="functionDescription" column="function_description"/>
+        </collection>
+    </resultMap>
+    <select id="getEquipmentById" resultMap="equip">
+        select e.*,ef.function_description from equipment_info e
+            left join equipment_functions ef on e.id = ef.equipment_info_id where e.id=#{id}
+    </select>
+</mapper>

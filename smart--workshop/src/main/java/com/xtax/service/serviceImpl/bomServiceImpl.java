@@ -42,6 +42,7 @@ public class bomServiceImpl implements bomService {
     public int deleteBom(Integer id) {
         //获取要删除的BOM的层次
         Bom bom = bomMapper.getBomById(id);
+        if(bom == null) return 0;
         String levelNum = bom.getLevelNum();
         //获取该层次下的所有BOM的id
         List<Integer> bomIdList = bomMapper.getBomIdByLevelNum(levelNum);

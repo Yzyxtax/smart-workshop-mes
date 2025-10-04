@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.ac.cn//DTD Mapper 3.0//EN"
+        "https://mybatis.ac.cn/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xtax.mapper.equipmentFunctionMapper">
+    <!--    批量添加设备功能-->
+    <insert id="addEquipmentFunction">
+        insert into equipment_functions(equipment_info_id, function_description) values
+        <foreach collection="equipmentDescription" item="functionDescription" separator=",">
+             (#{id}, #{functionDescription})
+        </foreach>
+    </insert>
+</mapper>
