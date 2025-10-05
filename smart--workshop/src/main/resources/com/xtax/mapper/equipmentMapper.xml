@@ -35,4 +35,11 @@
         select e.*,ef.function_description from equipment_info e
             left join equipment_functions ef on e.id = ef.equipment_info_id where e.id=#{id}
     </select>
+<!--    批量删除设备信息-->
+    <delete id="deleteEquipment">
+        delete from equipment_info where id in
+        <foreach item="id" collection="ids" separator="," open="(" close=")">
+            #{id}
+        </foreach>
+    </delete>
 </mapper>

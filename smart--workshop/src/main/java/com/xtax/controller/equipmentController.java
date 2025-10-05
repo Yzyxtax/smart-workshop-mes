@@ -40,11 +40,27 @@ public class equipmentController {
         return Result.error("添加失败");
     }
 
+    @DeleteMapping
+    public Result deleteEquipment(@RequestParam List<Integer> ids){
+        log.info("删除id为{}的设备",ids);
+        int delete = equipmentServiceImpl.deleteEquipment(ids);
+        if(delete > 0) return Result.success("删除成功");
+        return Result.error("删除失败");
+    }
+
     @GetMapping("/{id}")
     public Result getEquipmentById(@PathVariable Integer id){
         log.info("查询id为{}的设备",id);
         Equipment equipment = equipmentServiceImpl.getEquipmentById(id);
         if(equipment != null) return Result.success(equipment);
         return Result.error("查询失败");
+    }
+
+    @PutMapping
+    public Result updateEquipment(@RequestBody Equipment equipment){
+        log.info("更新设备：{}", equipment);
+        int update = equipmentServiceImpl.updateEquipment(equipment);
+        if(update > 0) return Result.success("更新成功");
+        return Result.error("更新失败");
     }
 }

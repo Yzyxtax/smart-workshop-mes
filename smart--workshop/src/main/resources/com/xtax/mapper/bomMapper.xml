@@ -20,7 +20,7 @@
 <!--    批量删除-->
     <delete id="deleteBom">
         delete from bom where id in
-        <foreach collection="list" item="id" separator="," close=")" open="(">
+        <foreach collection="bomIdList" item="id" separator="," close=")" open="(">
             #{id}
         </foreach>
     </delete>

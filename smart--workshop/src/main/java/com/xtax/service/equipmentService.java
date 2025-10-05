@@ -15,4 +15,10 @@ public interface equipmentService {
 
     //根据id查询设备信息
     public Equipment getEquipmentById(Integer id);
+
+    //修改设备信息
+    public int updateEquipment(Equipment equipment);
+
+    //删除设备信息
+    int deleteEquipment(List<Integer> ids);
 }

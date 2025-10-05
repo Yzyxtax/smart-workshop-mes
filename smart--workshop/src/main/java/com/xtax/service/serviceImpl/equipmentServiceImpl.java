@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -59,5 +60,26 @@ public class equipmentServiceImpl implements equipmentService {
     @Override
     public Equipment getEquipmentById(Integer id) {
         return equipmentMapper.getEquipmentById(id);
+    }
+
+    //修改设备信息
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int updateEquipment(Equipment equipment) {
+        int a = equipmentMapper.updateEquipment(equipment);
+        List<Integer> id = Collections.singletonList(equipment.getId());
+        int b = equipmentFunctionMapper.deleteEquipmentFunction(id);
+        int c = equipmentFunctionMapper.addEquipmentFunction(equipment.getFunctionDescription(),equipment.getId());
+        if(a > 0 && b > 0 && c > 0) return (a+b+c);
+        return 0;
+    }
+
+    //删除设备信息
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int deleteEquipment(List<Integer> ids) {
+        int a = equipmentMapper.deleteEquipment(ids);
+        int b = equipmentFunctionMapper.deleteEquipmentFunction(ids);
+        return a;
     }
 }

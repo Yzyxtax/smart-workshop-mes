@@ -1,10 +1,7 @@
 package com.xtax.mapper;
 
 import com.xtax.pojo.Equipment;
-import org.apache.ibatis.annotations.Insert;
-import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Options;
-import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.*;
 
 import java.util.List;
 
@@ -20,4 +17,11 @@ public interface equipmentMapper {
 
     //根据id查询设备信息和功能信息
     public Equipment getEquipmentById(Integer id);
+
+    //修改设备信息
+    @Update("update equipment_info set name=#{name},type=#{type},model=#{model},production_date=#{productionDate},manufacturer=#{manufacturer} where id=#{id}")
+    public int updateEquipment(Equipment equipment);
+
+    //批量删除设备信息
+    public int deleteEquipment(@Param("ids") List<Integer> ids);
 }

@@ -10,4 +10,12 @@
              (#{id}, #{functionDescription})
         </foreach>
     </insert>
+
+    <!--    批量删除设备功能-->
+    <delete id="deleteEquipmentFunction">
+        delete from equipment_functions where equipment_info_id in
+        <foreach collection="ids" item="id" separator="," open="(" close=")">
+            #{id}
+        </foreach>
+    </delete>
 </mapper>
