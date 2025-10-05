@@ -4,13 +4,15 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 封装登录信息
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class EquipmentQueryParam {
-    private Integer page=1;
-    private Integer pageSize=10;
+public class LoginInfo {
+    private String username;
+    private String password;
     private String name;
-    private String type;
-    private String model;
+    private String token;
 }

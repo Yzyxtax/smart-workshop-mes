@@ -19,7 +19,6 @@ public interface equipmentMapper {
     public Equipment getEquipmentById(Integer id);
 
     //修改设备信息
-    @Update("update equipment_info set name=#{name},type=#{type},model=#{model},production_date=#{productionDate},manufacturer=#{manufacturer} where id=#{id}")
     public int updateEquipment(Equipment equipment);
 
     //批量删除设备信息

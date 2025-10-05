@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.ac.cn//DTD Mapper 3.0//EN"
+        "https://mybatis.ac.cn/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xtax.mapper.userMapper">
+<!--    条件分页查询用户信息-->
+    <select id="getAllUser" resultType="com.xtax.pojo.User">
+        select * from users
+        <where>
+            <if test="name != null">
+                name like CONCAT('%',#{name},'%')
+            </if>
+            <if test="position != null">
+                and position like CONCAT('%',#{position},'%')
+            </if>
+            <if test="begin != null and end != null">
+                and created_at between #{begin} and #{end}
+            </if>
+        </where>
+        order by updated_at desc
+    </select>
+<!--    批量删除用户信息-->
+    <delete id="deleteUsers">
+        delete from users where id in
+        <foreach collection="ids" item="id" separator="," open="(" close=")">
+            #{id}
+        </foreach>
+    </delete>
+<!--    修改用户信息-->
+    <update id="updateUser">
+        update users 
+        <set> 
+            <if test="userName != null and userName != ''">user_name = #{userName},</if>
+            <if test="password != null and password != ''">password = #{password},</if>
+            <if test="name != null and name != ''">name = #{name},</if>
+            <if test="position != null and position != ''">position = #{position},</if>
+            <if test="permissionLevel != null and permissionLevel != ''">permission_level = #{permissionLevel},</if>
+            updated_at = now()
+        </set>
+        where id = #{id}
+    </update>
+</mapper>

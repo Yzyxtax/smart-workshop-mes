@@ -42,4 +42,16 @@
             #{id}
         </foreach>
     </delete>
+<!--    根据条件修改设备信息-->
+    <update id="updateEquipment">
+        update equipment_info
+        <set>
+            <if test="name != null and name != ''">name = #{name},</if>
+            <if test="type != null and type != ''">type = #{type},</if>
+            <if test="model != null and model != ''">model = #{model},</if>
+            <if test="productionDate != null">production_date = #{productionDate},</if>
+            <if test="manufacturer != null and manufacturer != ''">manufacturer = #{manufacturer}</if>
+        </set>
+        where id = #{id}
+    </update>
 </mapper>
