@@ -3,15 +3,19 @@ package com.xtax.service.serviceImpl;
 import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
 import com.xtax.mapper.userMapper;
+import com.xtax.pojo.LoginInfo;
 import com.xtax.pojo.ResultPage;
 import com.xtax.pojo.User;
 import com.xtax.pojo.UserQueryParam;
 import com.xtax.service.userService;
+import com.xtax.utils.JwtUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class userServiceImpl implements userService {
@@ -58,5 +62,15 @@ public class userServiceImpl implements userService {
     @Override
     public int updateUser(User user) {
         return userMapper.updateUser(user);
+    }
+
+    @Override
+    public LoginInfo login(String userName, String password) {
+        User user = userMapper.getUserByNameAndPassword(userName, password);
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("id", user.getId());
+        claims.put("userName", user.getUserName());
+        String token = JwtUtils.generateToken(claims);
+        return new LoginInfo(user.getUserName(), user.getPassword(), user.getName(), token);
     }
 }

@@ -1,5 +1,6 @@
 package com.xtax.service;
 
+import com.xtax.pojo.LoginInfo;
 import com.xtax.pojo.ResultPage;
 import com.xtax.pojo.User;
 import com.xtax.pojo.UserQueryParam;
@@ -21,4 +22,7 @@ public interface userService {
 
     //修改用户信息
     public int updateUser(User user);
+
+    //用户登录
+    public LoginInfo login(String userName, String password);
 }

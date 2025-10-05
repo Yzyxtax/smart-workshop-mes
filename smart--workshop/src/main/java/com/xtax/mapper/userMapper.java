@@ -28,4 +28,8 @@ public interface userMapper {
 
     //修改用户信息
     public int updateUser(User user);
+
+    //根据用户名和密码查询用户信息
+    @Select("select * from users where username=#{userName} and password=#{password}")
+    User getUserByNameAndPassword(String userName, String password);
 }
