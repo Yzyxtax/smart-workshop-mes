@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper
-        PUBLIC "-//mybatis.ac.cn//DTD Mapper 3.0//EN"
-        "https://mybatis.ac.cn/dtd/mybatis-3-mapper.dtd">
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xtax.mapper.equipmentFunctionMapper">
     <!--    批量添加设备功能-->
     <insert id="addEquipmentFunction">
         insert into equipment_functions(equipment_info_id, function_description) values
         <foreach collection="equipmentDescription" item="functionDescription" separator=",">
-             (#{id}, #{functionDescription})
+            (#{id}, #{functionDescription.functionDescription})
         </foreach>
     </insert>
 
@@ -18,4 +18,16 @@
             #{id}
         </foreach>
     </delete>
+
+    <!--  查询所有设备功能  -->
+    <resultMap id="function" type="com.xtax.pojo.Equipment">
+        <id property="id" column="equipment_info_id"/>
+        <collection property="description" ofType="com.xtax.pojo.FunctionDescription">
+            <id property="id" column="id"/>
+            <result property="functionDescription" column="function_description"/>
+        </collection>
+    </resultMap>
+    <select id="listAllEquipmentFunction" resultMap="function">
+        select id, equipment_info_id, function_description from equipment_functions
+    </select>
 </mapper>

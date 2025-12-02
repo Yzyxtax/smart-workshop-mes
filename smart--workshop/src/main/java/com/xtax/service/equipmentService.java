@@ -21,4 +21,7 @@ public interface equipmentService {
 
     //删除设备信息
     int deleteEquipment(List<Integer> ids);
+
+    //查询所有设备信息
+    List<Equipment> listAllEquipment();
 }

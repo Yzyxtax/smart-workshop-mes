@@ -63,4 +63,12 @@ public class equipmentController {
         if(update > 0) return Result.success("更新成功");
         return Result.error("更新失败");
     }
+
+    @GetMapping("/listAll")
+    public Result listAllEquipment(){
+        log.info("查询所有设备");
+        List<Equipment> list = equipmentServiceImpl.listAllEquipment();
+        if(list != null) return Result.success(list);
+        return Result.error("查询失败");
+    }
 }

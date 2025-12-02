@@ -6,6 +6,7 @@ import com.xtax.mapper.equipmentFunctionMapper;
 import com.xtax.mapper.equipmentMapper;
 import com.xtax.pojo.Equipment;
 import com.xtax.pojo.EquipmentQueryParam;
+import com.xtax.pojo.FunctionDescription;
 import com.xtax.pojo.ResultPage;
 import com.xtax.service.equipmentService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,7 +50,7 @@ public class equipmentServiceImpl implements equipmentService {
         int a = equipmentMapper.addEquipment(equipment);
 
         Integer id = equipment.getId();
-        List<String> fd = equipment.getFunctionDescription();
+        List<FunctionDescription> fd = equipment.getDescription();
         int b = equipmentFunctionMapper.addEquipmentFunction(fd,id);
 
         if(a > 0 && b > 0) return (a+b);
@@ -69,7 +70,7 @@ public class equipmentServiceImpl implements equipmentService {
         int a = equipmentMapper.updateEquipment(equipment);
         List<Integer> id = Collections.singletonList(equipment.getId());
         int b = equipmentFunctionMapper.deleteEquipmentFunction(id);
-        int c = equipmentFunctionMapper.addEquipmentFunction(equipment.getFunctionDescription(),equipment.getId());
+        int c = equipmentFunctionMapper.addEquipmentFunction(equipment.getDescription(),equipment.getId());
         if(a > 0 && b > 0 && c > 0) return (a+b+c);
         return 0;
     }
@@ -81,5 +82,21 @@ public class equipmentServiceImpl implements equipmentService {
         int a = equipmentMapper.deleteEquipment(ids);
         int b = equipmentFunctionMapper.deleteEquipmentFunction(ids);
         return a;
+    }
+
+    //查询所有设备信息
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public List<Equipment> listAllEquipment() {
+        List<Equipment> list = equipmentMapper.listAllEquipment();
+        List<Equipment> fd = equipmentFunctionMapper.listAllEquipmentFunction();
+        for (Equipment equipment : list){
+            for (Equipment equipment1 : fd){
+                if(equipment.getId().equals(equipment1.getId())){
+                    equipment.setDescription(equipment1.getDescription());
+                }
+            }
+        }
+        return list;
     }
 }

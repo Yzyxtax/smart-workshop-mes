@@ -67,10 +67,11 @@ public class userServiceImpl implements userService {
     @Override
     public LoginInfo login(String userName, String password) {
         User user = userMapper.getUserByNameAndPassword(userName, password);
+        if (user == null) return null;
         Map<String, Object> claims = new HashMap<>();
         claims.put("id", user.getId());
         claims.put("userName", user.getUserName());
         String token = JwtUtils.generateToken(claims);
-        return new LoginInfo(user.getUserName(), user.getPassword(), user.getName(), token);
+        return new LoginInfo(user.getId(), user.getUserName(), user.getPassword(), user.getName(), token);
     }
 }

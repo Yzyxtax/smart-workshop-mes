@@ -15,8 +15,8 @@ public interface userMapper {
     public List<User> getAllUser(String name, String position, LocalDate begin, LocalDate end);
 
     //添加用户信息
-    @Insert("insert into users(username,password,name,position,permission_level) " +
-            "values(#{userName},#{password},#{name},#{position},#{permissionLevel})")
+    @Insert("insert into users(username,name,position,permission_level) " +
+            "values(#{userName},#{name},#{position},#{permissionLevel})")
     public int addUser(User user);
 
     //删除用户信息

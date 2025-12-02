@@ -22,5 +22,5 @@ public class Equipment {
     private String manufacturer;
 
     //功能描述
-    private List<String> functionDescription;
+    private List<FunctionDescription> description;
 }

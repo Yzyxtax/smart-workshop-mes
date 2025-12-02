@@ -5,15 +5,13 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 封装登录信息
+ * Bom树形数据
  */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class LoginInfo {
+public class BomTreeData {
     private Integer id;
-    private String userName;
-    private String password;
-    private String name;
-    private String token;
+    private Integer parentId;
+    private String label;
 }

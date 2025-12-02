@@ -2,12 +2,15 @@ package com.xtax.service.serviceImpl;
 
 import com.xtax.mapper.bomMapper;
 import com.xtax.pojo.Bom;
+import com.xtax.pojo.BomTreeData;
 import com.xtax.service.bomService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+@Slf4j
 @Service
 public class bomServiceImpl implements bomService {
     @Autowired
@@ -15,7 +18,7 @@ public class bomServiceImpl implements bomService {
 
     //查询所有物料的名称和层次
     @Override
-    public List<Bom> getAllMaterialName() {
+    public List<BomTreeData> getAllMaterialName() {
         return bomMapper.getAllMaterialName();
     }
 
@@ -34,19 +37,24 @@ public class bomServiceImpl implements bomService {
     //添加
     @Override
     public int addBom(Bom bom) {
-        return bomMapper.addBom(bom);
+        int result = bomMapper.addBom(bom);
+        Integer id = bom.getId();
+//        if(id == null){
+//            log.info("插入失败");
+//            return 0;
+//        }
+        return id;
+    }
+
+    //修改BOM的层次
+    @Override
+    public int updateBomLevel(Integer id, Integer parentId) {
+        return bomMapper.updateBomLevel(id, parentId);
     }
 
     //删除
     @Override
-    public int deleteBom(Integer id) {
-        //获取要删除的BOM的层次
-        Bom bom = bomMapper.getBomById(id);
-        if(bom == null) return 0;
-        String levelNum = bom.getLevelNum();
-        //获取该层次下的所有BOM的id
-        List<Integer> bomIdList = bomMapper.getBomIdByLevelNum(levelNum);
-        //删除该层次下的所有BOM
-        return bomMapper.deleteBom(bomIdList);
+    public int deleteBom(List<Integer> ids) {
+        return bomMapper.deleteBom(ids);
     }
 }

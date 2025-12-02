@@ -2,6 +2,7 @@ package com.xtax.mapper;
 
 import com.xtax.pojo.Equipment;
 import org.apache.ibatis.annotations.*;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 
@@ -23,4 +24,8 @@ public interface equipmentMapper {
 
     //批量删除设备信息
     public int deleteEquipment(@Param("ids") List<Integer> ids);
+
+    //查询所有设备信息
+    @Select("select * from equipment_info")
+    List<Equipment> listAllEquipment();
 }

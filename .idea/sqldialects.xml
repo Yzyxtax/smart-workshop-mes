@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="SqlDialectMappings">
+    <file url="file://$PROJECT_DIR$/smart--workshop/src/main/resources/com/xtax/mapper/bomMapper.xml" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/smart--workshop/src/main/resources/com/xtax/mapper/equipmentFunctionMapper.xml" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/smart--workshop/src/main/resources/com/xtax/mapper/equipmentMapper.xml" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/smart--workshop/src/main/resources/com/xtax/mapper/processMapper.xml" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/smart--workshop/src/main/resources/com/xtax/mapper/userMapper.xml" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/smart--workshop/src/main/resources/com/xtax/mapper/workStepMapper.xml" dialect="MySQL" />
+  </component>
+</project>

@@ -11,7 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 @NoArgsConstructor
 public class Bom {
     private Integer id;
-    private String levelNum;
+    private Integer parentId;
     private String drawingNo;
     private String nameSpecification;
     private String material;

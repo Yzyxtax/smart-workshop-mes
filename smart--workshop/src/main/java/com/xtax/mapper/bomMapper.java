@@ -1,17 +1,21 @@
 package com.xtax.mapper;
 
 import com.xtax.pojo.Bom;
-import org.apache.ibatis.annotations.Delete;
-import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Select;
+import com.xtax.pojo.BomTreeData;
+import org.apache.ibatis.annotations.*;
 
 import java.util.List;
 
 @Mapper
 public interface bomMapper {
     //查询所有物料的名称和层次
-    @Select("Select level_num,name_specification from bom")
-    public List<Bom> getAllMaterialName();
+    @Results(id = "bomTreeData", value = {
+            @Result(column = "id", property = "id"),
+            @Result(column = "parent_id", property = "parentId"),
+            @Result(column = "name_specification", property = "label")
+    })
+    @Select("Select id,parent_id,name_specification from bom")
+    public List<BomTreeData> getAllMaterialName();
 
     //根据id查询BOM
     @Select("Select * from bom where id=#{id}")
@@ -21,12 +25,13 @@ public interface bomMapper {
     public int updateBom(Bom bom);
 
     //添加BOM
+    @Options(useGeneratedKeys = true,keyColumn = "id",keyProperty = "id")
     public int addBom(Bom bom);
 
     //删除BOM
-    public int deleteBom(List<Integer> bomIdList);
+    public int deleteBom(List<Integer> ids);
 
-    //根据层次查询BOM的id
-    @Select("SELECT id FROM bom WHERE level_num LIKE CONCAT(#{levelNum}, '%')")
-    List<Integer> getBomIdByLevelNum(String levelNum);
+    //修改BOM的层次
+    @Update("Update bom set parent_id=#{parentId} where id=#{id}")
+    int updateBomLevel(Integer id, Integer parentId);
 }
