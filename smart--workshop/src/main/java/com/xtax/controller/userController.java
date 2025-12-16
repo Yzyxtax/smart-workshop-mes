@@ -32,7 +32,7 @@ public class userController {
     }
 
     @PostMapping
-    public Result addUser(@RequestBody User user){
+    public Result addUser(@RequestBody UserVO user){
         log.info("添加用户：{}", user);
         int add = userServiceImpl.addUser(user);
         if(add > 0) return Result.success("添加成功");
@@ -50,16 +50,23 @@ public class userController {
     @GetMapping("/{id}")
     public Result getUserById(@PathVariable Integer id){
         log.info("查询id为{}的用户",id);
-        User user = userServiceImpl.getUserById(id);
+        UserVO user = userServiceImpl.getUserById(id);
         if(user != null) return Result.success(user);
         return Result.error("查询失败");
     }
 
     @PutMapping
-    public Result updateUser(@RequestBody User user){
+    public Result updateUser(@RequestBody UserVO user){
         log.info("更新用户信息：{}", user);
         int update = userServiceImpl.updateUser(user);
         if(update > 0) return Result.success("更新成功");
         return Result.error("更新失败");
+    }
+
+    @GetMapping("/join")
+    public Result findUserByTeamNo(){
+        log.info("查询还没加入班组的用户名");
+        FreeUserName user = userServiceImpl.findUserByTeamNo();
+        return Result.success(user);
     }
 }

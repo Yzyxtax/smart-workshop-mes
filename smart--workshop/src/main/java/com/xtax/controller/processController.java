@@ -30,7 +30,8 @@ public class processController {
     @PostMapping
     public Result addProcess(@RequestBody Processes processes){
         log.info("添加工序信息:{}", processes);
-        if(processServiceImpl.addProcess(processes)) return Result.success("添加成功");
+        int processId = processServiceImpl.addProcess(processes);
+        if(processId != -1) return Result.success(processId);
         return Result.error("添加失败");
     }
 

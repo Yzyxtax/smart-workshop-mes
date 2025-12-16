@@ -11,7 +11,7 @@ public interface processService {
     ResultPage<Processes> getProcess(ProcessQueryParam processQueryParam);
 
     // 添加工序信息
-    boolean addProcess(Processes processes);
+    int addProcess(Processes processes);
 
     // 删除工序信息
     boolean deleteProcess(List<Integer> ids);

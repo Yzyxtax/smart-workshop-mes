@@ -37,7 +37,7 @@ public class processServiceImpl implements processService {
     //添加工序信息
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public boolean addProcess(Processes processes) {
+    public int addProcess(Processes processes) {
         // 1. 插入主表，并自动回填 ID
         processMapper.addProcess(processes);
 
@@ -57,8 +57,8 @@ public class processServiceImpl implements processService {
         if (!processes.getWorkStepId().isEmpty()) {
             processMapper.insertWorkStep(processId, processes.getWorkStepId());
         }
-
-        return true;
+        if(processId != null)return processId;
+        return -1;
     }
 
     //删除工序信息

@@ -31,7 +31,6 @@
         update users 
         <set> 
             <if test="userName != null and userName != ''">username = #{userName},</if>
-            <if test="password != null and password != ''">password = #{password},</if>
             <if test="name != null and name != ''">name = #{name},</if>
             <if test="position != null and position != ''">position = #{position},</if>
             <if test="permissionLevel != null and permissionLevel != ''">permission_level = #{permissionLevel},</if>
@@ -39,4 +38,39 @@
         </set>
         where id = #{id}
     </update>
+<!--  根据id查询用户信息  -->
+    <resultMap id="user" type="com.xtax.pojo.UserVO">
+        <id property="id" column="id"/>
+        <result property="userName" column="username"/>
+        <result property="password" column="password"/>
+        <result property="name" column="name"/>
+        <result property="position" column="position"/>
+        <result property="permissionLevel" column="permission_level"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <collection property="processName" ofType="string">
+            <result column="process_name"/>
+        </collection>
+    </resultMap>
+    <select id="getUserById" resultMap="user">
+        SELECT u.*, s.process_name
+        FROM users u
+                 LEFT JOIN skills s ON u.username = s.username
+        WHERE u.id = #{id}
+        ORDER BY u.id, s.process_name
+    </select>
+<!--  添加用户信息  -->
+    <insert id="addUser">
+        insert into users(username, name, position, permission_level, updated_at)
+        values (#{userName}, #{name}, #{position}, #{permissionLevel}, now())
+    </insert>
+<!--  添加技能信息  -->
+    <insert id="addSkill">
+        insert into skills(username, name, process_name)
+        values (#{username}, #{name}, #{skill})
+    </insert>
+<!--  删除技能信息  -->
+    <delete id="deleteSkill">
+        delete from skills where username = #{username}
+    </delete>
 </mapper>

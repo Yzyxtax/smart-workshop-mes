@@ -28,9 +28,9 @@ public class globalExceptionHandler {
         return Result.error(r[2] + "已存在");
     }
 
-    @ExceptionHandler(BadSqlGrammarException.class)
-    public Result handleException(BadSqlGrammarException e) {
-        log.error("服务器异常：", e);
-        return Result.error("设备至少要有一个功能");
-    }
+//    @ExceptionHandler(BadSqlGrammarException.class)
+//    public Result handleException(BadSqlGrammarException e) {
+//        log.error("服务器异常：", e);
+//        return Result.error("数据库语法错误");
+//    }
 }
