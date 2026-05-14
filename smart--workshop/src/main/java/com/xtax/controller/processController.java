@@ -56,4 +56,12 @@ public class processController {
         if(processes != null) return Result.success(processes);
         return Result.error("查询失败");
     }
+
+    @GetMapping("/{processId}")
+    public Result getProcessById(@PathVariable Integer processId){
+        log.info("查询工序名称:{}", processId);
+        String name = processServiceImpl.getProcessById(processId);
+        if(name != null) return Result.success(name);
+        return Result.error("查询失败");
+    }
 }

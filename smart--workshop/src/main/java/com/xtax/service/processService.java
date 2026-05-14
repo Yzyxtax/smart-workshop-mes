@@ -21,4 +21,7 @@ public interface processService {
 
     // 查询所有工序信息
     List<Processes> listAll();
+
+    // 根据工序id查询工序信息
+    String getProcessById(Integer processId);
 }

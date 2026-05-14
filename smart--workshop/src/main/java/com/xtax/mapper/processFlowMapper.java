@@ -3,6 +3,7 @@ package com.xtax.mapper;
 import com.xtax.pojo.ProcessFlow;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
 import java.util.HashMap;
@@ -45,4 +46,12 @@ public interface processFlowMapper {
 
     //删除工序信息
     void deleteProcessFlow(Integer id);
+
+    //判断该BOM编号的工艺流程是否存在
+    @Select("SELECT EXISTS(SELECT 1 FROM process_flows WHERE bom_id = #{bomId} AND status = '有效')")
+    boolean isFlowExist(@Param("bomId") Integer bomId);
+
+    //根据BOM编号查询所有工艺流程ID
+    @Select("select id from process_flows where bom_id= #{bomId} and status='有效'")
+    List<Integer> getProcessFlowIdList(Integer bomId);
 }

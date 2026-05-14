@@ -65,4 +65,20 @@
         SET s1.choose = TRUE
         WHERE s1.id = s2.id;
     </update>
+    <!--  为技能表添加班组数据  -->
+    <update id="setTeamMemberSkill">
+        UPDATE skills
+        SET team_no = #{teamNo}
+        WHERE username in
+        <foreach item="item" index="index" collection="userName" separator="," open="(" close=")">
+            #{item}
+        </foreach>
+        or username = #{teamLeader}
+    </update>
+    <!--  为技能表清空班组数据  -->
+    <update id="deleteTeamMemberSkill">
+        UPDATE skills
+        SET team_no = null
+        WHERE team_no = #{teamNo}
+    </update>
 </mapper>

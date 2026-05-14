@@ -33,4 +33,12 @@ public class Result {
         result.setData(null);
         return result;
     }
+
+    public static Result error(Integer code, String message){
+        Result result = new Result();
+        result.setCode(code);
+        result.setMessage(message);
+        result.setData(null);
+        return result;
+    }
 }

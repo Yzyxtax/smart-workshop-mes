@@ -8,7 +8,7 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <processorPath useClasspath="false">
-          <entry name="$PROJECT_DIR$/../../apache-maven-3.9.8/maven_repository/org/projectlombok/lombok/1.18.40/lombok-1.18.40.jar" />
+          <entry name="D:/hellowworld(java)/apache-maven-3.9.8/maven_repository/org/projectlombok/lombok/1.18.40/lombok-1.18.40.jar" />
         </processorPath>
         <module name="smart--workshop" />
       </profile>

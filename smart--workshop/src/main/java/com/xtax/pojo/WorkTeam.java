@@ -16,6 +16,7 @@ public class WorkTeam {
     private String lineNo;
     private String lineName;
     private String teamLeader;
+    private String leaderName;
     private Integer teamMemberNum;
     private List<String> userName;
 }

@@ -90,4 +90,10 @@ public class processServiceImpl implements processService {
     public List<Processes> listAll() {
         return processMapper.getProcess(null, null, null);
     }
+
+    //根据ID查询工序信息
+    @Override
+    public String getProcessById(Integer processId) {
+        return processMapper.getProcessById(processId);
+    }
 }

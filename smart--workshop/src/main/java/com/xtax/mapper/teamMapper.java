@@ -46,4 +46,14 @@ public interface teamMapper {
     // 删除矩阵数据
     @Update("update skills set choose=false where team_no=#{teamCode}")
     void deleteMatrixData(String teamCode);
+
+    // 获取班组的班长名称
+    @Select("SELECT username FROM users WHERE team_no = #{teamCode} AND position = '班组长'")
+    String getLeaderName(String teamCode);
+
+    //为技能表添加班组数据
+    void setTeamMemberSkill(WorkTeam team);
+
+    //为技能表清空班组数据
+    void deleteTeamMemberSkill(String teamNo);
 }

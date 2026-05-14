@@ -4,6 +4,8 @@
     <file url="file://$PROJECT_DIR$/smart--workshop/src/main/resources/com/xtax/mapper/bomMapper.xml" dialect="MySQL" />
     <file url="file://$PROJECT_DIR$/smart--workshop/src/main/resources/com/xtax/mapper/equipmentFunctionMapper.xml" dialect="MySQL" />
     <file url="file://$PROJECT_DIR$/smart--workshop/src/main/resources/com/xtax/mapper/equipmentMapper.xml" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/smart--workshop/src/main/resources/com/xtax/mapper/lineMapper.xml" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/smart--workshop/src/main/resources/com/xtax/mapper/planMapper.xml" dialect="MySQL" />
     <file url="file://$PROJECT_DIR$/smart--workshop/src/main/resources/com/xtax/mapper/processFlowMapper.xml" dialect="MySQL" />
     <file url="file://$PROJECT_DIR$/smart--workshop/src/main/resources/com/xtax/mapper/processMapper.xml" dialect="MySQL" />
     <file url="file://$PROJECT_DIR$/smart--workshop/src/main/resources/com/xtax/mapper/teamMapper.xml" dialect="MySQL" />

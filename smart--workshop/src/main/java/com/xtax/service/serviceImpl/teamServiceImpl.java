@@ -29,6 +29,7 @@ public class teamServiceImpl implements teamService {
     public WorkTeam getTeamByNo(String teamCode) {
         WorkTeam team = teamMapper.getTeamByNo(teamCode);
         team.setUserName(teamMapper.getTeamMember(teamCode));
+        team.setLeaderName(teamMapper.getLeaderName(teamCode));
         return team;
     }
 
@@ -39,6 +40,7 @@ public class teamServiceImpl implements teamService {
         teamMapper.addTeam(team);
         if(!team.getTeamLeader().isEmpty() || !team.getUserName().isEmpty()) {
             teamMapper.setTeamMember(team);
+            teamMapper.setTeamMemberSkill(team);
         }
     }
 
@@ -51,6 +53,8 @@ public class teamServiceImpl implements teamService {
         // 修改班组成员信息
         teamMapper.deleteTeamMember(team.getTeamNo());
         teamMapper.setTeamMember(team);
+        teamMapper.deleteTeamMemberSkill(team.getTeamNo());
+        teamMapper.setTeamMemberSkill(team);
     }
 
     // 删除班组信息

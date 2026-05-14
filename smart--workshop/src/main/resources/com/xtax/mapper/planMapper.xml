@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xtax.mapper.planMapper">
+    <!--  添加计划  -->
+    <insert id="addPlan">
+        insert into production_plan
+        (plan_no, plan_name, bom_id, plan_num, completed_num, start_time, end_time, priority, status, creator_id, publisher_id, create_time, update_time, remark)
+        value
+        (#{planNo}, #{planName}, #{bomId}, #{planNum}, 0, #{startTime}, #{endTime}, #{priority}, 'CREATED', #{creatorId}, #{publisherId}, now(), now(), #{remark})
+    </insert>
+
+    <!--  修改计划  -->
+    <update id="updatePlan" parameterType="map">
+            update production_plan
+            <set>
+                <if test="plan.planNo != null and plan.planNo != ''">
+                    plan_no = #{plan.planNo},
+                </if>
+                <if test="plan.planName != null and plan.planName != ''">
+                    plan_name = #{plan.planName},
+                </if>
+                <if test="plan.bomId != null and plan.bomId != ''">
+                    bom_id = #{plan.bomId},
+                </if>
+                <if test="plan.planNum != null">
+                    plan_num = #{plan.planNum},
+                </if>
+                <if test="plan.startTime != null">
+                    start_time = #{plan.startTime},
+                </if>
+                <if test="plan.endTime != null">
+                    end_time = #{plan.endTime},
+                </if>
+                <if test="plan.priority != null and plan.priority != ''">
+                    priority = #{plan.priority},
+                </if>
+                <if test="plan.remark != null and plan.remark != ''">
+                    remark = #{plan.remark},
+                </if>
+                update_time = now()
+            </set>
+            where plan_no = #{planNo}
+        </update>
+</mapper>

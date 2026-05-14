@@ -4,6 +4,7 @@ import com.sun.jdi.event.StepEvent;
 import com.xtax.pojo.Processes;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Options;
+import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
 
@@ -38,4 +39,8 @@ public interface processMapper {
 
     //修改工序信息
     int updateProcess(Processes processes);
+
+    //根据id查询工序信息
+    @Select("select process_name from processes where id = #{processId}")
+    String getProcessById(Integer processId);
 }
