@@ -7,6 +7,10 @@ import lombok.NoArgsConstructor;
 import java.util.List;
 
 
+/**
+ * 工序步骤实体类
+ * 描述生产工序的具体步骤信息
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

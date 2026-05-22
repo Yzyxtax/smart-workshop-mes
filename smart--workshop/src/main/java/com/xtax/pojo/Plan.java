@@ -12,6 +12,10 @@ import org.springframework.format.annotation.DateTimeFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+/**
+ * 生产计划实体类
+ * 描述生产计划的详细信息，包括计划编号、名称、BOM、数量、时间等
+ */
 @Slf4j
 @Data
 @AllArgsConstructor

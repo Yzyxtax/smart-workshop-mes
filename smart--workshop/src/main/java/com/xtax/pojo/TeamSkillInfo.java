@@ -6,6 +6,10 @@ import lombok.NoArgsConstructor;
 
 import java.util.HashMap;
 
+/**
+ * 团队技能信息实体类
+ * 描述团队的技能矩阵信息
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

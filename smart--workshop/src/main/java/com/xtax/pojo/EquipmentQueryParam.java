@@ -4,6 +4,10 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 设备查询参数类
+ * 用于设备查询的条件参数
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

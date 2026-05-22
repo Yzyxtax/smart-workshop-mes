@@ -5,6 +5,10 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * 物料清单（Bill of Materials）实体类
+ * 描述产品的组成物料信息
+ */
 @Slf4j
 @Data
 @AllArgsConstructor

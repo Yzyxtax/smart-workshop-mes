@@ -1,0 +1,34 @@
+# POJO实体类注释添加 - 验证清单
+
+- [x] Checkpoint 1: Bom.java已添加类注释
+- [x] Checkpoint 2: BomTreeData.java已添加类注释（原有）
+- [x] Checkpoint 3: ProductionOrder.java已添加类注释
+- [x] Checkpoint 4: WorkOrder.java已添加类注释
+- [x] Checkpoint 5: WorkStep.java已添加类注释
+- [x] Checkpoint 6: WorkTeam.java已添加类注释
+- [x] Checkpoint 7: TeamSkillInfo.java已添加类注释
+- [x] Checkpoint 8: TeamItem.java已添加类注释
+- [x] Checkpoint 9: ProductionLine.java已添加类注释
+- [x] Checkpoint 10: LineCompose.java已添加类注释
+- [x] Checkpoint 11: LineComposeVO.java已添加类注释
+- [x] Checkpoint 12: ProcessFlow.java已添加类注释
+- [x] Checkpoint 13: Processes.java已添加类注释
+- [x] Checkpoint 14: ProcessQueryParam.java已添加类注释
+- [x] Checkpoint 15: Equipment.java已添加类注释
+- [x] Checkpoint 16: EquipmentQueryParam.java已添加类注释
+- [x] Checkpoint 17: Plan.java已添加类注释
+- [x] Checkpoint 18: UserVO.java已添加类注释
+- [x] Checkpoint 19: UserQueryParam.java已添加类注释
+- [x] Checkpoint 20: FreeUserName.java已添加类注释
+- [x] Checkpoint 21: MatrixDataVO.java已添加类注释
+- [x] Checkpoint 22: MatrixDataDTO.java已添加类注释
+- [x] Checkpoint 23: LoginInfo.java已添加类注释（原有）
+- [x] Checkpoint 24: StatusHistory.java已添加类注释
+- [x] Checkpoint 25: ResultPage.java已添加类注释
+- [x] Checkpoint 26: Result.java已添加类注释
+- [x] Checkpoint 27: FlowChartDataDTO.java已添加类注释
+- [x] Checkpoint 28: FunctionDescription.java已添加类注释
+- [x] Checkpoint 29: EdgeData.java已添加类注释
+- [x] Checkpoint 30: FlowChartData.java已添加类注释
+- [x] Checkpoint 31: WorkStepQueryParam.java已添加类注释
+- [x] Checkpoint 32: 所有注释风格统一，使用JavaDoc格式

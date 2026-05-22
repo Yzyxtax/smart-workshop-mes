@@ -4,6 +4,10 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 工艺流程实体类
+ * 描述工艺路线的基本信息
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

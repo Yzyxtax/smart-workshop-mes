@@ -6,6 +6,10 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
+/**
+ * 工序查询参数类
+ * 用于工序查询的条件参数
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

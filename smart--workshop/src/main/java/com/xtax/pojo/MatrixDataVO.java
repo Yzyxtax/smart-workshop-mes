@@ -6,6 +6,10 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
+/**
+ * 矩阵数据视图对象
+ * 用于展示用户的工序选择信息
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

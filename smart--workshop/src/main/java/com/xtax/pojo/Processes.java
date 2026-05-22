@@ -7,6 +7,10 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
+/**
+ * 工序实体类
+ * 描述生产工序的详细信息，包括工序名称、计划工时、质检点等
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

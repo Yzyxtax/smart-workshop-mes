@@ -7,6 +7,10 @@ import lombok.NoArgsConstructor;
 import java.util.HashMap;
 import java.util.List;
 
+/**
+ * 产线组成实体类
+ * 描述生产线的班组组成信息
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

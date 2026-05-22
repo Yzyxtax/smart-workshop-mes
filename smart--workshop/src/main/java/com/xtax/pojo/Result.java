@@ -3,6 +3,10 @@ package com.xtax.pojo;
 import lombok.Getter;
 import lombok.Setter;
 
+/**
+ * 统一返回结果封装类
+ * 用于封装API接口的返回结果
+ */
 @Setter
 @Getter
 public class Result {

@@ -7,6 +7,10 @@ import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDate;
 
+/**
+ * 用户查询参数类
+ * 用于用户查询的条件参数
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

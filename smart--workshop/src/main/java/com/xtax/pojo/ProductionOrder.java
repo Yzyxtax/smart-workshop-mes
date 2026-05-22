@@ -10,6 +10,10 @@ import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDateTime;
 
+/**
+ * 生产订单实体类
+ * 描述生产订单的详细信息，包括订单编号、计划编号、生产线、数量等
+ */
 @Slf4j
 @Data
 @AllArgsConstructor

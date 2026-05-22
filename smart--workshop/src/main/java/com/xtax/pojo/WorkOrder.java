@@ -10,6 +10,10 @@ import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDateTime;
 
+/**
+ * 工单实体类
+ * 描述生产过程中的工单信息，包括计划数量、实际数量、报废数量等
+ */
 @Slf4j
 @Data
 @AllArgsConstructor

@@ -9,6 +9,10 @@ import java.time.LocalDate;
 import java.util.Date;
 import java.util.List;
 
+/**
+ * 设备实体类
+ * 描述生产设备的详细信息，包括名称、类型、型号、生产日期等
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
