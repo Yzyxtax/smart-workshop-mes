@@ -73,9 +73,9 @@
 | 依赖关系 | 源类 | 目标类 | 问题类型 |
 |----------|------|--------|----------|
 | **继承** | UserVO | User (Entity) | VO → Entity |
-| **组合** | LineComposeVO | LineCompose (Entity) | VO → Entity |
-| **组合** | MatrixDataVO | ProcessChoice (内部类) | 无外部依赖 |
-| **组合** | MatrixDataDTO | MatrixData (内部类) | 无外部依赖 |
+| **内部类** | MatrixDataVO | ProcessChoice | 无外部依赖 |
+| **内部类** | MatrixDataDTO | MatrixData | 无外部依赖 |
+| **内部类** | LineCompose | compose | 无外部依赖 |
 
 ### 依赖处理策略
 
@@ -84,12 +84,41 @@
 **核心原则**：允许 VO 依赖 Entity，但禁止 Entity 依赖 VO/DTO
 
 **处理方案**：
-1. `UserVO extends User` → 合法，VO 可以继承 Entity
-2. `LineComposeVO` 引用 `LineCompose` → 合法，VO 可以持有 Entity 引用
+- `UserVO extends User` → 合法，VO 可以继承 Entity
 
 **理由**：
 - VO 是 Entity 的展示层扩展，继承关系符合分层架构原则
 - 不存在循环依赖风险（VO → Entity 是单向依赖）
+
+### 依赖关系确认
+
+#### LineComposeVO 与 LineCompose
+
+经实际源代码分析，[LineComposeVO](file:///c:/Users/yzyxt/Desktop/Smart-Workshop-Lightweight-MES-System/Backend/smart-workshop/smart--workshop/src/main/java/com/xtax/pojo/LineComposeVO.java) 与 [LineCompose](file:///c:/Users/yzyxt/Desktop/Smart-Workshop-Lightweight-MES-System/Backend/smart-workshop/smart--workshop/src/main/java/com/xtax/pojo/LineCompose.java) 之间**没有直接依赖关系**：
+
+```java
+// LineComposeVO - 独立的视图对象
+public class LineComposeVO {
+    private String lineNo;
+    private List<String> teams;  // 只包含字符串列表
+}
+
+// LineCompose - 实体类
+public class LineCompose {
+    private String lineNo;
+    private List<compose> composes;  // 包含自定义内部类
+    
+    // 内部类定义
+    public static class compose {
+        private String teamNo;
+        private String teamName;
+        private String type;
+        private HashMap<String, Integer> processMatrix;
+    }
+}
+```
+
+两者仅通过业务语义相关联，没有代码层面的继承或组合依赖关系。
 
 #### 策略二：消除继承，使用组合模式
 
