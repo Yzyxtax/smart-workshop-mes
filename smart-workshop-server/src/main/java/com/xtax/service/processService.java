@@ -1,0 +1,27 @@
+package com.xtax.service;
+
+import com.xtax.dto.ProcessQueryParam;
+import com.xtax.entity.Processes;
+import com.xtax.vo.ResultPage;
+
+import java.util.List;
+
+public interface processService {
+    // 查询工序信息
+    ResultPage<Processes> getProcess(ProcessQueryParam processQueryParam);
+
+    // 添加工序信息
+    int addProcess(Processes processes);
+
+    // 删除工序信息
+    boolean deleteProcess(List<Integer> ids);
+
+    // 修改工序信息
+    boolean updateProcess(Processes processes);
+
+    // 查询所有工序信息
+    List<Processes> listAll();
+
+    // 根据工序id查询工序信息
+    String getProcessById(Integer processId);
+}
