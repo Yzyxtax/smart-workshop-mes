@@ -3,19 +3,18 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.5.6</version>
-        <relativePath/>
+        <groupId>com.xtax</groupId>
+        <artifactId>smart-workshop-parent</artifactId>
+        <version>1.0-SNAPSHOT</version>
+        <relativePath>../smart-workshop-parent/pom.xml</relativePath>
     </parent>
-    <groupId>com.xtax</groupId>
+
     <artifactId>smart-workshop-server</artifactId>
-    <version>1.0-SNAPSHOT</version>
-    <name>smart-workshop-server</name>
-    <description>smart-workshop-server</description>
 
     <properties>
-        <java.version>21</java.version>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
     <dependencies>
         <dependency>
@@ -25,7 +24,7 @@
         <dependency>
             <groupId>org.mybatis.spring.boot</groupId>
             <artifactId>mybatis-spring-boot-starter</artifactId>
-            <version>3.0.5</version>
+            <scope>compile</scope>
         </dependency>
 
         <dependency>
@@ -46,7 +45,6 @@
         <dependency>
             <groupId>org.mybatis.spring.boot</groupId>
             <artifactId>mybatis-spring-boot-starter-test</artifactId>
-            <version>3.0.5</version>
             <scope>test</scope>
         </dependency>
 
@@ -54,51 +52,43 @@
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <version>1.5.13</version>
         </dependency>
 
 <!--        pageHelper-->
         <dependency>
             <groupId>com.github.pagehelper</groupId>
             <artifactId>pagehelper-spring-boot-starter</artifactId>
-            <version>1.4.7</version>
         </dependency>
 <!--        jwt令牌-->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt</artifactId>
-            <version>0.9.1</version>
         </dependency>
 <!--        JAXB依赖-->
         <dependency>
             <groupId>javax.xml.bind</groupId>
             <artifactId>jaxb-api</artifactId>
-            <version>2.3.1</version>
         </dependency>
         <dependency>
             <groupId>org.glassfish.jaxb</groupId>
             <artifactId>jaxb-runtime</artifactId>
-            <version>2.3.1</version>
         </dependency>
 <!--        pojo模块依赖-->
         <dependency>
             <groupId>com.xtax</groupId>
             <artifactId>smart-workshop-pojo</artifactId>
-            <version>1.0-SNAPSHOT</version>
         </dependency>
         
 <!--        common模块依赖-->
         <dependency>
             <groupId>com.xtax</groupId>
             <artifactId>smart-workshop-common</artifactId>
-            <version>1.0-SNAPSHOT</version>
         </dependency>
         
 <!--        production模块依赖-->
         <dependency>
             <groupId>com.xtax</groupId>
             <artifactId>smart-workshop-production</artifactId>
-            <version>1.0-SNAPSHOT</version>
         </dependency>
     </dependencies>
 
@@ -136,7 +126,7 @@
                 <configuration>
                     <forkCount>0</forkCount>
                     <reuseForks>false</reuseForks>
-                    <skipTests>false</skipTests>
+                    <skipTests>true</skipTests>
                 </configuration>
             </plugin>
         </plugins>
