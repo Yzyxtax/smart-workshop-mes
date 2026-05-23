@@ -1,5 +1,6 @@
 package com.xtax.stateDomain;
 
+import com.xtax.enums.ActionEnum;
 import lombok.Getter;
 import lombok.Setter;
 

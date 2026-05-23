@@ -1,6 +1,6 @@
 package com.xtax.mapper;
 
-import com.xtax.stateDomain.StateEnum;
+import com.xtax.enums.StateEnum;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;

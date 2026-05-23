@@ -1,5 +1,7 @@
 package com.xtax.stateDomain;
 
+import com.xtax.enums.ActionEnum;
+import com.xtax.enums.StateEnum;
 import org.springframework.stereotype.Component;
 
 import java.util.EnumMap;

@@ -34,6 +34,7 @@
             <if test="name != null and name != ''">name = #{name},</if>
             <if test="position != null and position != ''">position = #{position},</if>
             <if test="permissionLevel != null and permissionLevel != ''">permission_level = #{permissionLevel},</if>
+            <if test="password != null and password != ''">password = #{password},</if>
             updated_at = now()
         </set>
         where id = #{id}

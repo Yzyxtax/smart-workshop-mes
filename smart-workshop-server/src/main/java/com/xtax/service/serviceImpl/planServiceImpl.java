@@ -3,7 +3,7 @@ package com.xtax.service.serviceImpl;
 import com.xtax.mapper.planMapper;
 import com.xtax.entity.Plan;
 import com.xtax.service.planService;
-import com.xtax.stateDomain.StateEnum;
+import com.xtax.enums.StateEnum;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

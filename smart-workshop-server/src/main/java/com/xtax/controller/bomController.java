@@ -32,12 +32,12 @@ public class bomController {
 
     @GetMapping("/{id}")
     public Result getBomById(@PathVariable Integer id){
-            log.info("查询id为{}的BOM",id);
-            Bom bom = bomServiceImpl.getBomById(id);
-            if(bom != null) {
-                return Result.success(bom);
-            }
-            return Result.error("查询失败");
+        log.info("查询id为{}的BOM",id);
+        Bom bom = bomServiceImpl.getBomById(id);
+        if(bom != null) {
+            return Result.success(bom);
+        }
+        return Result.error("查询失败");
     }
 
     @PutMapping

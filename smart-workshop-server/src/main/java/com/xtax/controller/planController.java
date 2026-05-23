@@ -5,7 +5,7 @@ import com.xtax.entity.Plan;
 import com.xtax.vo.Result;
 import com.xtax.service.serviceImpl.planServiceImpl;
 import com.xtax.service.serviceImpl.planStateServiceImpl;
-import com.xtax.stateDomain.ActionEnum;
+import com.xtax.enums.ActionEnum;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;

@@ -70,9 +70,11 @@ public class userServiceImpl implements userService {
     @Override
     public int updateUser(UserVO user) {
         userMapper.updateUser(user);
-        userMapper.deleteSkill(user.getUserName());
-        for (String skill : user.getProcessName()){
-            userMapper.addSkill(user.getUserName(), user.getName(), skill);
+        if(user.getUserName() != null){
+            userMapper.deleteSkill(user.getUserName());
+            for (String skill : user.getProcessName()){
+                userMapper.addSkill(user.getUserName(), user.getName(), skill);
+            }
         }
         return 1;
     }

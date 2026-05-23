@@ -1,7 +1,7 @@
 package com.xtax.mapper;
 
 import com.xtax.entity.Plan;
-import com.xtax.stateDomain.StateEnum;
+import com.xtax.enums.StateEnum;
 import org.apache.ibatis.annotations.*;
 
 import java.util.List;

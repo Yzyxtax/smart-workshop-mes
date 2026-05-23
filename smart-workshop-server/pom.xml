@@ -6,11 +6,11 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>3.5.6</version>
-        <relativePath/> <!-- lookup parent from repository -->
+        <relativePath/>
     </parent>
     <groupId>com.xtax</groupId>
     <artifactId>smart-workshop-server</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>1.0-SNAPSHOT</version>
     <name>smart-workshop-server</name>
     <description>smart-workshop-server</description>
 
@@ -80,6 +80,26 @@
             <artifactId>jaxb-runtime</artifactId>
             <version>2.3.1</version>
         </dependency>
+<!--        pojo模块依赖-->
+        <dependency>
+            <groupId>com.xtax</groupId>
+            <artifactId>smart-workshop-pojo</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+        
+<!--        common模块依赖-->
+        <dependency>
+            <groupId>com.xtax</groupId>
+            <artifactId>smart-workshop-common</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+        
+<!--        production模块依赖-->
+        <dependency>
+            <groupId>com.xtax</groupId>
+            <artifactId>smart-workshop-production</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -107,6 +127,16 @@
                             <artifactId>lombok</artifactId>
                         </exclude>
                     </excludes>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.5.4</version>
+                <configuration>
+                    <forkCount>0</forkCount>
+                    <reuseForks>false</reuseForks>
+                    <skipTests>false</skipTests>
                 </configuration>
             </plugin>
         </plugins>

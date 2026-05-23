@@ -2,7 +2,7 @@ package com.xtax.entity;
 
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.xtax.stateDomain.StateEnum;
+import com.xtax.enums.StateEnum;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

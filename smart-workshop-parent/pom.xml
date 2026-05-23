@@ -8,10 +8,61 @@
     <artifactId>smart-workshop-parent</artifactId>
     <version>1.0-SNAPSHOT</version>
 
+    <packaging>pom</packaging>
+
     <properties>
         <maven.compiler.source>24</maven.compiler.source>
         <maven.compiler.target>24</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <spring-boot.version>3.5.6</spring-boot.version>
+        <mybatis.version>3.5.15</mybatis.version>
+        <lombok.version>1.18.40</lombok.version>
+        <jjwt.version>0.9.1</jjwt.version>
+        <jackson.version>2.21</jackson.version>
+        <logback.version>1.5.13</logback.version>
     </properties>
-    
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            
+            <dependency>
+                <groupId>com.xtax</groupId>
+                <artifactId>smart-workshop-pojo</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            
+            <dependency>
+                <groupId>com.xtax</groupId>
+                <artifactId>smart-workshop-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            
+            <dependency>
+                <groupId>com.xtax</groupId>
+                <artifactId>smart-workshop-production</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            
+            <dependency>
+                <groupId>com.xtax</groupId>
+                <artifactId>smart-workshop-server</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <modules>
+        <module>../smart-workshop-pojo</module>
+        <module>../smart-workshop-common</module>
+        <module>../smart-workshop-production</module>
+        <module>../smart-workshop-server</module>
+    </modules>
+
 </project>
