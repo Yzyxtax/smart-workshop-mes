@@ -1,8 +1,8 @@
 package com.xtax.audit;
 
-import com.xtax.enums.StateEnum;
 import com.xtax.mapper.auditMapper;
 import com.xtax.stateDomain.StateContext;
+import com.xtax.stateDomain.StateEnum;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
