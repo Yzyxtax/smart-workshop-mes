@@ -5,23 +5,21 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
- * 封装用户信息
+ * 权限实体类
+ * 用于封装权限信息
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class User {
+public class Permission {
     private Integer id;
-    private String userName;
-    private String password;
-    private String name;
-    private String position;
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDate createdAt;
+    private String permissionCode;
+    private String permissionName;
+    private String module;
+    private String description;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime updatedAt;
+    private LocalDateTime createdAt;
 }

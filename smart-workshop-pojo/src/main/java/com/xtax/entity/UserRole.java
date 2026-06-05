@@ -5,23 +5,19 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
- * 封装用户信息
+ * 用户角色关联实体类
+ * 用于封装用户与角色的关联关系
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class User {
+public class UserRole {
     private Integer id;
-    private String userName;
-    private String password;
-    private String name;
-    private String position;
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDate createdAt;
+    private Integer userId;
+    private Integer roleId;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime updatedAt;
+    private LocalDateTime createdAt;
 }

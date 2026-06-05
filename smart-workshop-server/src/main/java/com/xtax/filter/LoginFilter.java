@@ -33,8 +33,13 @@ public class LoginFilter implements Filter {
             return;
         }
 
-        //3. 获取请求头中的token
-        String token = request.getHeader("token");
+        // 3. 获取请求头中的token (支持从 Authorization: Bearer xxx 和 token: xxx 两种方式获取)
+        String authHeader = request.getHeader("Authorization");
+        String token = request.getHeader("token"); // 保留原来的兼容性
+
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            token = authHeader.substring(7); // 去掉 "Bearer " 前缀
+        }
 
         //4. 判断token是否存在
         if (token == null || token.isEmpty()) {

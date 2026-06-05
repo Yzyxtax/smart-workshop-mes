@@ -33,7 +33,6 @@
             <if test="userName != null and userName != ''">username = #{userName},</if>
             <if test="name != null and name != ''">name = #{name},</if>
             <if test="position != null and position != ''">position = #{position},</if>
-            <if test="permissionLevel != null and permissionLevel != ''">permission_level = #{permissionLevel},</if>
             <if test="password != null and password != ''">password = #{password},</if>
             updated_at = now()
         </set>
@@ -46,7 +45,6 @@
         <result property="password" column="password"/>
         <result property="name" column="name"/>
         <result property="position" column="position"/>
-        <result property="permissionLevel" column="permission_level"/>
         <result property="createdAt" column="created_at"/>
         <result property="updatedAt" column="updated_at"/>
         <collection property="processName" ofType="string">
@@ -62,8 +60,8 @@
     </select>
 <!--  添加用户信息  -->
     <insert id="addUser">
-        insert into users(username, name, position, permission_level, updated_at)
-        values (#{userName}, #{name}, #{position}, #{permissionLevel}, now())
+        insert into users(username, name, position, updated_at)
+        values (#{userName}, #{name}, #{position}, now())
     </insert>
 <!--  添加技能信息  -->
     <insert id="addSkill">
