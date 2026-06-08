@@ -1,9 +1,14 @@
 package com.xtax.service.serviceImpl;
 
 import com.xtax.audit.AuditService;
+import com.xtax.entity.ProductionOrder;
 import com.xtax.enums.ActionEnum;
 import com.xtax.enums.StateEnum;
+import com.xtax.exception.BusinessException;
+import com.xtax.mapper.lineMapper;
+import com.xtax.mapper.orderMapper;
 import com.xtax.mapper.planMapper;
+import com.xtax.mapper.processFlowMapper;
 import com.xtax.plicy.GatePolicy;
 import com.xtax.plicy.planPermissionPolicy;
 import com.xtax.entity.Plan;
@@ -13,6 +18,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Slf4j
 @Service
@@ -27,6 +34,12 @@ public class planStateServiceImpl implements planStateService {
     private AuditService auditService;
     @Autowired
     private planMapper planMapper;
+    @Autowired
+    private orderMapper orderMapper;
+    @Autowired
+    private processFlowMapper processFlowMapper;
+    @Autowired
+    private lineMapper lineMapper;
 
     /**
      * 统一的状态处理入口
@@ -58,26 +71,122 @@ public class planStateServiceImpl implements planStateService {
             gatePolicy.check(context);
         }
 
-        // 5. 计算并更新新状态
-        // 利用 StateEnum 中定义的 switch 逻辑获取 next 状态
+        // 5. TERMINATE 额外校验：已有 Order 处于执行中时不允许作废
+        if (ActionEnum.TERMINATE.equals(action)) {
+            List<ProductionOrder> orders = orderMapper.getOrderByPlan(planNo);
+            boolean anyRunning = orders.stream()
+                    .anyMatch(o -> o.getStatus() == StateEnum.RUNNING);
+            if (anyRunning) {
+                throw new BusinessException("计划下存在执行中的订单，不允许作废");
+            }
+        }
+
+        // 6. 计算并更新新状态
         StateEnum toStatus = fromStatus.next(action);
         plan.setStatus(toStatus);
         planMapper.updatePlanStatus(planNo, toStatus);
 
-        // 6. 异步/同步审计记录 (AuditService)
-        // 记录：谁在什么时间，通过什么动作，将 Plan 从 A 状态变更为 B 状态
-        auditService.record("PLAN",context, fromStatus, toStatus);
+        // 7. 审计记录
+        auditService.record("PLAN", context, fromStatus, toStatus);
 
-        // 7. 状态联动处理
+        // 8. 状态联动处理
         handleLinkage(plan, action);
     }
 
     /**
      * 处理状态联动逻辑
+     * Plan PUBLISH → 根据工艺流程和可用产线拆分为生产订单（Order）
      */
     public void handleLinkage(Plan plan, ActionEnum action) {
         if (ActionEnum.PUBLISH.equals(action)) {
-            // TODO: 调用订单服务，根据计划拆分并生成生产订单 (Order)
+            // 1. 获取计划对应的工艺流程列表
+            Integer bomId = plan.getBomId();
+            List<Integer> processFlowIdList = processFlowMapper.getProcessFlowIdList(bomId);
+
+            // 2. 遍历工艺流程，为每条可用产线创建一个生产订单
+            for (Integer processFlowId : processFlowIdList) {
+                // 获取该工艺流程对应的产线信息（通过 lineMapper 按 process_flow_id 匹配）
+                // lineMapper.isLineExist 只做布尔检查，这里需要找到具体产线编号
+                String lineNo = findLineByProcessFlowId(processFlowId);
+                if (lineNo == null) {
+                    log.info("工艺流程 ID={} 无可用的空闲产线，跳过", processFlowId);
+                    continue;
+                }
+
+                // 3. 生成订单编号：计划编号 + 产线编号
+                String orderNo = plan.getPlanNo() + "-" + lineNo;
+
+                // 4. 创建生产订单
+                ProductionOrder order = new ProductionOrder();
+                order.setOrderNo(orderNo);
+                order.setPlanNo(plan.getPlanNo());
+                order.setLineNo(lineNo);
+                order.setOrderName(plan.getPlanName() + "-" + lineNo);
+                order.setQuantity(plan.getPlanNum());
+                order.setStartTime(plan.getStartTime().atStartOfDay());
+                order.setEndTime(plan.getEndTime().atStartOfDay());
+
+                orderMapper.addOrder(order);
+                log.info("联动下发：计划 {} 生成生产订单 {}（产线 {}）", plan.getPlanNo(), orderNo, lineNo);
+            }
+        }
+    }
+
+    /**
+     * 查询指定工艺流程 ID 对应的可用产线编号
+     * 返回第一条空闲产线，若无则返回 null
+     */
+    private String findLineByProcessFlowId(Integer processFlowId) {
+        return lineMapper.getAvailableLineNoByFlowId(processFlowId);
+    }
+
+    /**
+     * 由下层的 Order 状态变更触发，向上同步 Plan 的状态（Order → Plan 联动上传）
+     * 聚合规则：
+     *   - 任一 Order 处于 RUNNING → Plan = RUNNING
+     *   - 所有 Order 处于 PAUSED/COMPLETED 且无 RUNNING → Plan = PAUSED
+     *   - 所有 Order 处于 COMPLETED → Plan = COMPLETED
+     *
+     * @param planNo 计划编号
+     * @param userId 触发此联动的操作人（来自 Order 的状态变更人）
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void syncPlanStatusFromOrders(String planNo, Integer userId) {
+        Plan plan = planMapper.getPlanByNo(planNo);
+        if (plan == null) {
+            log.warn("联动上传：计划 {} 不存在，跳过", planNo);
+            return;
+        }
+
+        List<ProductionOrder> orders = orderMapper.getOrderByPlan(planNo);
+        if (orders.isEmpty()) {
+            log.info("联动上传：计划 {} 下无订单，跳过", planNo);
+            return;
+        }
+
+        boolean anyRunning = orders.stream().anyMatch(o -> o.getStatus() == StateEnum.RUNNING);
+        boolean allCompleted = orders.stream().allMatch(o -> o.getStatus() == StateEnum.COMPLETED);
+        boolean allPausedOrCompleted = orders.stream()
+                .allMatch(o -> o.getStatus() == StateEnum.PAUSED || o.getStatus() == StateEnum.COMPLETED);
+        boolean noneRunning = orders.stream().noneMatch(o -> o.getStatus() == StateEnum.RUNNING);
+
+        StateEnum currentStatus = plan.getStatus();
+        StateEnum newStatus = currentStatus;
+
+        if (anyRunning && currentStatus != StateEnum.RUNNING) {
+            newStatus = StateEnum.RUNNING;
+        } else if (allCompleted && currentStatus != StateEnum.COMPLETED) {
+            newStatus = StateEnum.COMPLETED;
+        } else if (allPausedOrCompleted && noneRunning && currentStatus == StateEnum.RUNNING) {
+            newStatus = StateEnum.PAUSED;
+        }
+
+        if (newStatus != currentStatus) {
+            planMapper.updatePlanStatus(planNo, newStatus);
+            StateContext context = new StateContext(planNo, null, userId);
+            auditService.record("PLAN", context, currentStatus, newStatus);
+            log.info("联动上传：计划 {} 从 [{}] 自动变更为 [{}]", planNo,
+                    currentStatus.getDesc(), newStatus.getDesc());
         }
     }
 }

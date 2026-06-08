@@ -39,6 +39,10 @@ public interface lineMapper {
     @Select("SELECT EXISTS(SELECT 1 FROM production_lines WHERE process_flow_id = #{processFlowId} AND line_status = '空闲')")
     boolean isLineExist(@Param("processFlowId") Integer processFlowId);
 
+    //根据工艺流程编号获取空闲产线编号（用于计划发布时自动选择产线）
+    @Select("SELECT line_no FROM production_lines WHERE process_flow_id = #{processFlowId} AND line_status = '空闲' ORDER BY line_no LIMIT 1")
+    String getAvailableLineNoByFlowId(@Param("processFlowId") Integer processFlowId);
+
     //获取指定产线的信息
     @Select("SELECT * FROM production_lines WHERE line_no = #{lineNo}")
     ProductionLine getLine(String lineNo);

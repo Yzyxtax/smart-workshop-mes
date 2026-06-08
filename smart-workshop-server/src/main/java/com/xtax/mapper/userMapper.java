@@ -42,4 +42,12 @@ public interface userMapper {
     //查询还没有加入班组的班组长用户名
     @Select("select username from users where team_no is null and position = '班组长'")
     List<String> findLeaderByTeamNo();
+
+    /** 检查是否存在具备指定工序技能的用户（用于 Skill Gate） */
+    @Select("SELECT COUNT(*) > 0 FROM skills WHERE process_name = #{processName}")
+    boolean hasUserWithSkill(String processName);
+
+    /** 查询具备指定工序技能的用户 ID 列表（用于工单派工） */
+    @Select("SELECT u.id FROM users u INNER JOIN skills s ON u.username = s.username WHERE s.process_name = #{processName}")
+    List<Integer> findUserIdsBySkill(String processName);
 }

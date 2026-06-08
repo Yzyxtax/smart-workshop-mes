@@ -45,5 +45,6 @@ public class ProductionOrder {
     private LocalDateTime createTime;
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private String remark;
     private LocalDateTime updateTime;
 }

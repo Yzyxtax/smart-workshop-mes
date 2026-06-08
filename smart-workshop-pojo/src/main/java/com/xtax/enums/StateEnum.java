@@ -13,7 +13,9 @@ public enum StateEnum {
 
     PAUSED("PAUSED", "暂停"),
 
-    COMPLETED("COMPLETED", "完成");
+    COMPLETED("COMPLETED", "完成"),
+
+    TERMINATED("TERMINATED", "作废");
 
     private final String code;
     private final String desc;
@@ -35,6 +37,8 @@ public enum StateEnum {
                     return CREATED;
                 } else if (action == ActionEnum.START_WORK) {
                     return RUNNING;
+                } else if (action == ActionEnum.TERMINATE) {
+                    return TERMINATED;
                 }
                 break;
             case RUNNING:
@@ -50,6 +54,8 @@ public enum StateEnum {
                 }
                 break;
             case COMPLETED:
+                break;
+            case TERMINATED:
                 break;
         }
         throw new IllegalStateException("状态 " + this + " 无法执行动作 " + action);

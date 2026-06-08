@@ -15,7 +15,9 @@ public enum ActionEnum {
 
     START_WORK("START_WORK", "开始作业"),
 
-    FINISH_WORK("FINISH_WORK", "完成作业");
+    FINISH_WORK("FINISH_WORK", "完成作业"),
+
+    TERMINATE("TERMINATE", "作废");
 
     private final String code;
     private final String desc;

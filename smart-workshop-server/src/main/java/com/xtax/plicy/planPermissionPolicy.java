@@ -18,11 +18,11 @@ public class planPermissionPolicy implements PermissionPolicy{
             case CANCEL_PUBLISH:
             case PAUSE:
             case RESUME:
+            case TERMINATE:
                 if(!"生产主管".equals(position)){
                     throw new SecurityException(position + "无权限执行此操作");
-                }else {
-                    return;
                 }
+                break;
             case START_WORK:
             case FINISH_WORK:
                 throw new SecurityException(position + "无权限执行此操作");

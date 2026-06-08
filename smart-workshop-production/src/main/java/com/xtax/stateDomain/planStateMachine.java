@@ -39,7 +39,8 @@ public class planStateMachine {
         STATE_ACTION_MAP.put(
                 StateEnum.RELEASED,
                 EnumSet.of(
-                        ActionEnum.CANCEL_PUBLISH
+                        ActionEnum.CANCEL_PUBLISH,
+                        ActionEnum.TERMINATE
                 )
         );
 
@@ -62,6 +63,12 @@ public class planStateMachine {
         // COMPLETED：已完成（终态）
         STATE_ACTION_MAP.put(
                 StateEnum.COMPLETED,
+                EnumSet.noneOf(ActionEnum.class)
+        );
+
+        // TERMINATED：已作废（终态）
+        STATE_ACTION_MAP.put(
+                StateEnum.TERMINATED,
                 EnumSet.noneOf(ActionEnum.class)
         );
     }

@@ -39,7 +39,8 @@ public class workOrderStateMachine {
                 StateEnum.RELEASED,
                 EnumSet.of(
                         ActionEnum.CANCEL_PUBLISH,
-                        ActionEnum.START_WORK
+                        ActionEnum.START_WORK,
+                        ActionEnum.TERMINATE
                 )
         );
 
@@ -63,6 +64,12 @@ public class workOrderStateMachine {
         // COMPLETED：已完成（终态）
         STATE_ACTION_MAP.put(
                 StateEnum.COMPLETED,
+                EnumSet.noneOf(ActionEnum.class)
+        );
+
+        // TERMINATED：已作废（终态）
+        STATE_ACTION_MAP.put(
+                StateEnum.TERMINATED,
                 EnumSet.noneOf(ActionEnum.class)
         );
     }

@@ -13,7 +13,7 @@ public class AuditService {
 
     public void record(String targetType, StateContext context, StateEnum fromStatus, StateEnum toStatus) {
         auditMapper.addAudit(
-                "plan",
+                targetType,
                 context.getBizNo(),
                 fromStatus.getCode(),
                 toStatus.getCode(),

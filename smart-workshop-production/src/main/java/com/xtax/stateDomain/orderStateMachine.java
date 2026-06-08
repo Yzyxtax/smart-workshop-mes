@@ -35,18 +35,23 @@ public class orderStateMachine {
         );
 
         // RELEASED：已发布（冻结）
+        // START_WORK 由工单事实驱动，TERMINATE 为人工作废
         STATE_ACTION_MAP.put(
                 StateEnum.RELEASED,
                 EnumSet.of(
-                        ActionEnum.CANCEL_PUBLISH
+                        ActionEnum.CANCEL_PUBLISH,
+                        ActionEnum.START_WORK,
+                        ActionEnum.TERMINATE
                 )
         );
 
-        // RUNNING：执行中（由订单事实驱动）
+        // RUNNING：执行中
+        // PAUSE 为人工干预，FINISH_WORK 由工单事实驱动
         STATE_ACTION_MAP.put(
                 StateEnum.RUNNING,
                 EnumSet.of(
-                        ActionEnum.PAUSE
+                        ActionEnum.PAUSE,
+                        ActionEnum.FINISH_WORK
                 )
         );
 
@@ -61,6 +66,12 @@ public class orderStateMachine {
         // COMPLETED：已完成（终态）
         STATE_ACTION_MAP.put(
                 StateEnum.COMPLETED,
+                EnumSet.noneOf(ActionEnum.class)
+        );
+
+        // TERMINATED：已作废（终态）
+        STATE_ACTION_MAP.put(
+                StateEnum.TERMINATED,
                 EnumSet.noneOf(ActionEnum.class)
         );
     }
@@ -78,7 +89,7 @@ public class orderStateMachine {
         if (allowedActions == null || !allowedActions.contains(action)) {
             throw new IllegalStateException(
                     String.format(
-                            "Plan 状态 [%s] 不允许执行动作 [%s]",
+                            "Order 状态 [%s] 不允许执行动作 [%s]",
                             currentState,
                             action
                     )

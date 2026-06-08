@@ -54,4 +54,8 @@ public interface processFlowMapper {
     //根据BOM编号查询所有工艺流程ID
     @Select("select id from process_flows where bom_id= #{bomId} and status='有效'")
     List<Integer> getProcessFlowIdList(Integer bomId);
+
+    /** 查询工艺流程包含的工序ID列表 */
+    @Select("SELECT process_id FROM process_flow_processes WHERE process_flow_id = #{flowId}")
+    List<Integer> getProcessIdsByFlowId(Integer flowId);
 }
