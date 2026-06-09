@@ -10,12 +10,12 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * 生产计划状态机
+ * 工单状态机
  * 职责：
- *  1. 定义 Plan 的状态迁移规则
+ *  1. 定义 WorkOrder 的状态迁移规则
  *  2. 校验某个 Action 在当前状态下是否合法
  * 注意：
- *  - 这里只做“状态规则校验”
+ *  - 这里只做”状态规则校验”
  *  - 不涉及权限、不涉及业务数据、不查数据库
  */
 @Component
@@ -53,11 +53,12 @@ public class workOrderStateMachine {
                 )
         );
 
-        // PAUSED：已暂停
+        // PAUSED：已暂停（允许恢复执行或主管作废）
         STATE_ACTION_MAP.put(
                 StateEnum.PAUSED,
                 EnumSet.of(
-                        ActionEnum.RESUME
+                        ActionEnum.RESUME,
+                        ActionEnum.TERMINATE
                 )
         );
 
@@ -87,7 +88,7 @@ public class workOrderStateMachine {
         if (allowedActions == null || !allowedActions.contains(action)) {
             throw new IllegalStateException(
                     String.format(
-                            "Plan 状态 [%s] 不允许执行动作 [%s]",
+                            "WorkOrder 状态 [%s] 不允许执行动作 [%s]",
                             currentState,
                             action
                     )

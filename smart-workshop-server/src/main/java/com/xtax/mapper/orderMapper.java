@@ -55,4 +55,8 @@ public interface orderMapper {
     @Insert("insert into work_order (work_order_no, order_no, process_id, user_id, is_critical, planned_quantity, actual_quantity, scrap_quantity, status, start_time, end_time, actual_start_time, actual_end_time, create_time, update_time) "
             + "values (#{workOrderNo}, #{orderNo}, #{processId}, #{userId}, #{isCritical}, #{plannedQuantity}, #{actualQuantity}, #{scrapQuantity}, #{status}, #{startTime}, #{endTime}, #{actualStartTime}, #{actualEndTime}, now(), now())")
     void insertWorkOrder(com.xtax.entity.WorkOrder workOrder);
+
+    // 更新工单状态（订单取消发布联动时使用）
+    @Update("update work_order set status = #{status}, update_time = now() where work_order_no = #{workOrderNo}")
+    void updateWorkOrderStatus(@Param("workOrderNo") String workOrderNo, @Param("status") StateEnum status);
 }

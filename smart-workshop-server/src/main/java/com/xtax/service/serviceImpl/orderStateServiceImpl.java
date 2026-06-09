@@ -157,6 +157,11 @@ public class orderStateServiceImpl implements orderStateService {
         if (ActionEnum.PUBLISH.equals(action)) {
             generateWorkOrders(order);
         }
+
+        // 向下联动：取消发布时作废所有 CREATED 状态的工单
+        if (ActionEnum.CANCEL_PUBLISH.equals(action)) {
+            cancelWorkOrders(order);
+        }
     }
 
     /**
@@ -221,5 +226,26 @@ public class orderStateServiceImpl implements orderStateService {
             log.info("订单 {} 发布联动：生成工单 {}（工序「{}」，派工人员 ID={}，关键={}）",
                     order.getOrderNo(), workOrderNo, processName, skilledUserId, wo.getIsCritical());
         }
+    }
+
+    /**
+     * 订单取消发布（CANCEL_PUBLISH）时，联动作废所有 CREATED 状态的工单
+     */
+    private void cancelWorkOrders(ProductionOrder order) {
+        List<WorkOrder> workOrders = orderMapper.getWorkOrdersByOrderNo(order.getOrderNo());
+        if (workOrders == null || workOrders.isEmpty()) {
+            log.info("订单 {} 取消发布：无下属工单，跳过", order.getOrderNo());
+            return;
+        }
+
+        int cancelCount = 0;
+        for (WorkOrder wo : workOrders) {
+            if (wo.getStatus() == StateEnum.CREATED) {
+                orderMapper.updateWorkOrderStatus(wo.getWorkOrderNo(), StateEnum.TERMINATED);
+                cancelCount++;
+                log.info("订单 {} 取消发布联动：工单 {} 已作废", order.getOrderNo(), wo.getWorkOrderNo());
+            }
+        }
+        log.info("订单 {} 取消发布联动：共作废 {} 个 CREATED 状态工单", order.getOrderNo(), cancelCount);
     }
 }
