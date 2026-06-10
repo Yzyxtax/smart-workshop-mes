@@ -59,12 +59,49 @@ mvn spring-boot:run -f smart-workshop-server/pom.xml
 
 `smart-workshop-production` 模块包含生产领域的状态机逻辑：
 
-- **`StateEnum`** —— 五种状态：`CREATED → RELEASED → RUNNING → PAUSED/COMPLETED`。`next(ActionEnum)` 方法编码了所有合法的状态转换。
-- **`ActionEnum`** —— 六种动作：`PUBLISH`、`CANCEL_PUBLISH`、`PAUSE`、`RESUME`、`START_WORK`、`FINISH_WORK`。
+- **`StateEnum`** —— 六种状态：`CREATED → RELEASED → RUNNING → PAUSED/COMPLETED/TERMINATED`。`next(ActionEnum)` 方法编码了所有合法的状态转换。提供工具方法 `isTerminal()`（COMPLETED/TERMINATED）和 `isPreExecution()`（CREATED/RELEASED），用于级联操作中的状态判定。
+- **`ActionEnum`** —— 七种动作：`PUBLISH`、`CANCEL_PUBLISH`、`PAUSE`、`RESUME`、`START_WORK`、`FINISH_WORK`、`TERMINATE`。
 - **状态机**（`orderStateMachine`、`planStateMachine`、`workOrderStateMachine`）—— 每个都是 `@Component`，内部使用 `EnumMap<StateEnum, Set<ActionEnum>>` 定义每个状态下允许的动作。`check(StateEnum, ActionEnum)` 方法对非法转换抛出 `IllegalStateException`。这些是纯规则校验器 —— 不访问数据库，不涉及权限。
 - **`StateContext`** —— 值对象，持有 `bizNo`、`action`、`userId`，在服务层、策略层和审计层之间传递。
-- **`PermissionPolicy`** 接口及其实现（如 `planPermissionPolicy`）—— 与状态机分离。校验谁可以执行哪个动作（例如，只有"生产主管"可以发布/暂停/恢复计划）。校验失败抛出 `SecurityException`。
-- **状态服务模式**（如 `planStateServiceImpl.handle()`）：权限校验 → 状态机校验 → 业务验证 → 状态持久化 → 审计记录。
+- **`PermissionPolicy`** 接口及其实现（`planPermissionPolicy`、`orderPermissionPolicy`、`workOrderPermissionPolicy`）—— 与状态机分离。校验谁可以执行哪个动作（例如，只有"生产主管"可以发布/暂停/恢复计划）。校验失败抛出 `SecurityException`。
+- **`GatePolicyInterface`** 及其实现 `GatePolicy` —— 关键动作（PUBLISH）前的业务门禁校验。按 Capacity Gate（产线可用性）→ Process Gate（工艺完整性）→ Skill Gate（人员技能）三级顺序检查。校验失败抛出 `BusinessException`。
+- **`AuditService`** —— 所有状态变更均通过 `auditMapper.addAudit()` 写入 `status_history` 表，记录 `targetType`、`targetNo`、`oldStatus`、`newStatus`、`operatorId`。
+- **状态服务管道**（`planStateServiceImpl`、`orderStateServiceImpl`、`workOrderStateServiceImpl`，全部位于 `service/serviceImpl/` 下）—— 每个 `handle()` 方法遵循完全一致的 8 步管道：
+  1. 获取业务对象并构建 `StateContext`
+  2. **权限校验**（PermissionPolicy）
+  3. **状态机校验**（StateMachine）—— 纯规则，不查数据库
+  4. **门禁校验**（GatePolicy）—— 仅在 PUBLISH 等关键决策动作时触发
+  5. **业务验证** —— TERMINATE 前检查关联对象状态等
+  6. **状态持久化** —— 使用 `fromStatus.next(action)` 计算新状态，按动作类型差异化更新（如 START_WORK 同时锚定实际开始时间）
+  7. **审计记录** —— 写入 status_history
+  8. **级联联动** —— 向下创建/变更子对象，或向上同步父对象状态
+
+## 三层级联状态模型
+
+系统的核心架构是 **Plan → Order → WorkOrder** 三级生产层次，状态变更通过级联联动在层级间传播：
+
+```
+Plan（生产计划）
+├── PUBLISH → 根据工艺流程和可用产线拆分为 Order
+├── PAUSE/RESUME → 级联暂停/恢复所有关联 Order
+├── CANCEL_PUBLISH/TERMINATE → 级联作废所有非终态 Order
+│
+Order（生产订单）
+├── PUBLISH → 为产线各工序生成 WorkOrder 并自动发布
+├── PAUSE/RESUME → 级联暂停/恢复所有关联的 RUNNING/PAUSED WorkOrder
+├── CANCEL_PUBLISH/TERMINATE → 级联作废所有非终态 WorkOrder
+│
+WorkOrder（工单，最靠近现场的执行层）
+├── START_WORK/FINISH_WORK → 由员工手动确认（需要 userId 归属校验）
+├── PAUSE/RESUME → 员工（需 userId 匹配）或主管（跨工单）操作
+└── TERMINATE → 仅 RELEASED/PAUSED 状态可作废
+```
+
+**向下联动**（父 → 子）：父级状态变更自动触发子级操作。Plan PUBLISH 自动创建 Order；Order PUBLISH 自动创建并发布 WorkOrder。
+
+**向上同步**（子 → 父）：关键工单（`is_critical=true`）状态变更触发订单状态聚合，订单状态变更再触发计划状态聚合：
+- `workOrderStateServiceImpl.handleLinkage()` → 聚合 Order 下所有关键工单 → 判定并更新 Order 状态
+- `orderStateServiceImpl.handleLinkage()` → 调用 `planStateServiceImpl.syncPlanStatusFromOrders()` → 单次遍历聚合所有 Order（O(N)），按 **RUNNING > COMPLETED > PAUSED** 优先级判定 Plan 新状态
 
 ## 控制器：状态-动作模式
 
