@@ -275,8 +275,9 @@ public class orderStateServiceImpl implements orderStateService {
         for (WorkOrder wo : workOrders) {
             StateEnum woStatus = wo.getStatus();
             // 处理所有非终态的工单（CREATED / RELEASED / PAUSED）
-            if (woStatus != StateEnum.COMPLETED && woStatus != StateEnum.TERMINATED) {
+            if (!woStatus.isTerminal()) {
                 orderMapper.updateWorkOrderStatus(wo.getWorkOrderNo(), StateEnum.TERMINATED);
+                cascadeAuditWorkOrder(wo.getWorkOrderNo(), ActionEnum.TERMINATE, woStatus, StateEnum.TERMINATED, userId);
                 cancelCount++;
                 log.info("订单 {} 取消发布联动：工单 {} 已作废（原状态: {}）", order.getOrderNo(), wo.getWorkOrderNo(), woStatus.getDesc());
             }
@@ -300,8 +301,9 @@ public class orderStateServiceImpl implements orderStateService {
         int terminateCount = 0;
         for (WorkOrder wo : workOrders) {
             StateEnum woStatus = wo.getStatus();
-            if (woStatus != StateEnum.COMPLETED && woStatus != StateEnum.TERMINATED) {
+            if (!woStatus.isTerminal()) {
                 orderMapper.updateWorkOrderStatus(wo.getWorkOrderNo(), StateEnum.TERMINATED);
+                cascadeAuditWorkOrder(wo.getWorkOrderNo(), ActionEnum.TERMINATE, woStatus, StateEnum.TERMINATED, userId);
                 terminateCount++;
                 log.info("订单 {} 作废联动：工单 {} 已作废", order.getOrderNo(), wo.getWorkOrderNo());
             }
@@ -324,6 +326,7 @@ public class orderStateServiceImpl implements orderStateService {
         for (WorkOrder wo : workOrders) {
             if (wo.getStatus() == StateEnum.RUNNING) {
                 orderMapper.updateWorkOrderStatus(wo.getWorkOrderNo(), StateEnum.PAUSED);
+                cascadeAuditWorkOrder(wo.getWorkOrderNo(), ActionEnum.PAUSE, StateEnum.RUNNING, StateEnum.PAUSED, userId);
                 log.info("订单 {} 暂停联动：工单 {} 已暂停", order.getOrderNo(), wo.getWorkOrderNo());
             }
         }
@@ -344,8 +347,24 @@ public class orderStateServiceImpl implements orderStateService {
         for (WorkOrder wo : workOrders) {
             if (wo.getStatus() == StateEnum.PAUSED) {
                 orderMapper.updateWorkOrderStatus(wo.getWorkOrderNo(), StateEnum.RUNNING);
+                cascadeAuditWorkOrder(wo.getWorkOrderNo(), ActionEnum.RESUME, StateEnum.PAUSED, StateEnum.RUNNING, userId);
                 log.info("订单 {} 恢复联动：工单 {} 已恢复", order.getOrderNo(), wo.getWorkOrderNo());
             }
         }
+    }
+
+    /**
+     * 级联工单审计的私有辅助方法，统一 4 条级联路径中的审计记录模式
+     *
+     * @param workOrderNo 工单编号
+     * @param action      触发动作
+     * @param fromStatus  变更前状态
+     * @param toStatus    变更后状态
+     * @param userId      操作人
+     */
+    private void cascadeAuditWorkOrder(String workOrderNo, ActionEnum action,
+                                        StateEnum fromStatus, StateEnum toStatus, Integer userId) {
+        StateContext ctx = new StateContext(workOrderNo, action, userId);
+        auditService.record("WORK_ORDER", ctx, fromStatus, toStatus);
     }
 }

@@ -281,25 +281,47 @@ public class planStateServiceImpl implements planStateService {
             return;
         }
 
-        boolean anyRunning = orders.stream().anyMatch(o -> o.getStatus() == StateEnum.RUNNING);
-        boolean allCompleted = orders.stream().allMatch(o -> o.getStatus() == StateEnum.COMPLETED);
-        boolean allPausedOrCompleted = orders.stream()
-                .allMatch(o -> o.getStatus() == StateEnum.PAUSED || o.getStatus() == StateEnum.COMPLETED);
-        boolean noneRunning = orders.stream().noneMatch(o -> o.getStatus() == StateEnum.RUNNING);
+        // 单次遍历对订单按状态归类计数，替代多轮 Stream 扫描（O(N) 替代 O(8N)）
+        // 设计依据：RUNNING → COMPLETED → PAUSED 优先级递减
+        int countRunning = 0, countPaused = 0, countCompleted = 0, countTerminated = 0, countPreExec = 0;
+        int totalCompletedQty = 0;
+
+        for (ProductionOrder o : orders) {
+            StateEnum st = o.getStatus();
+            if (st == StateEnum.RUNNING) {
+                countRunning++;
+            } else if (st == StateEnum.PAUSED) {
+                countPaused++;
+            } else if (st == StateEnum.COMPLETED) {
+                countCompleted++;
+                totalCompletedQty += (o.getQuantityProduced() != null ? o.getQuantityProduced() : 0);
+            } else if (st == StateEnum.TERMINATED) {
+                countTerminated++;
+            } else {
+                countPreExec++;  // CREATED / RELEASED
+            }
+        }
 
         StateEnum currentStatus = plan.getStatus();
         StateEnum newStatus = currentStatus;
+        boolean anyRunning = countRunning > 0;
+        boolean allTerminal = countRunning == 0 && countPaused == 0 && countPreExec == 0;
+        boolean hasCompleted = countCompleted > 0;
+        boolean noneRunning = countRunning == 0;
+        boolean hasExecutedOrders = (countRunning + countPaused + countCompleted + countTerminated) > 0;
 
+        // RUNNING 判定：任一订单处于 RUNNING → Plan = RUNNING（最高优先级）
         if (anyRunning && currentStatus != StateEnum.RUNNING) {
             newStatus = StateEnum.RUNNING;
-        } else if (allCompleted && currentStatus != StateEnum.COMPLETED) {
+        }
+        // COMPLETED 判定：所有订单处于终态（COMPLETED / TERMINATED），且至少一个 COMPLETED
+        else if (allTerminal && hasCompleted && currentStatus != StateEnum.COMPLETED) {
             newStatus = StateEnum.COMPLETED;
-            // 汇总所有订单的产量到计划 completedNum
-            int totalCompleted = orders.stream()
-                    .mapToInt(o -> o.getQuantityProduced() != null ? o.getQuantityProduced() : 0).sum();
-            planMapper.updatePlanCompletedNum(planNo, totalCompleted);
-            log.info("联动上传：计划 {} 已完成，汇总产量={}", planNo, totalCompleted);
-        } else if (allPausedOrCompleted && noneRunning && currentStatus == StateEnum.RUNNING) {
+            planMapper.updatePlanCompletedNum(planNo, totalCompletedQty);
+            log.info("联动上传：计划 {} 已完成，汇总产量={}", planNo, totalCompletedQty);
+        }
+        // PAUSED 判定：所有已执行订单暂停或终态，至少一个暂停，无运行中订单
+        else if (hasExecutedOrders && noneRunning && countPaused > 0 && currentStatus == StateEnum.RUNNING) {
             newStatus = StateEnum.PAUSED;
         }
 

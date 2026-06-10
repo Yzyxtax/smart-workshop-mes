@@ -25,6 +25,20 @@ public enum StateEnum {
         this.desc = desc;
     }
 
+    /**
+     * 是否为终态（COMPLETED / TERMINATED），终态订单/工单不再参与级联操作
+     */
+    public boolean isTerminal() {
+        return this == COMPLETED || this == TERMINATED;
+    }
+
+    /**
+     * 是否为执行前状态（CREATED / RELEASED），此类订单从未进入执行态，不参与 PAUSED 聚合判定
+     */
+    public boolean isPreExecution() {
+        return this == CREATED || this == RELEASED;
+    }
+
     public StateEnum next(ActionEnum action) {
         switch (this) {
             case CREATED:
