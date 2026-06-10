@@ -25,6 +25,7 @@ public interface workOrderStateService {
      *
      * @param workOrder 工单对象
      * @param action    执行的动作
+     * @param userId    触发联动的操作人
      */
-    void handleLinkage(WorkOrder workOrder, ActionEnum action);
+    void handleLinkage(WorkOrder workOrder, ActionEnum action, Integer userId);
 }

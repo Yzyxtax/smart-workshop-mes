@@ -15,8 +15,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 生产订单控制器
@@ -29,6 +31,11 @@ import java.util.Map;
 @RestController
 @RequestMapping("/order")
 public class orderController {
+
+    /** 用户可直接调用的 Action 白名单（PUBLISH / CANCEL_PUBLISH / START_WORK / FINISH_WORK 仅限系统内部联动触发） */
+    private static final Set<ActionEnum> USER_ALLOWED_ACTIONS =
+            EnumSet.of(ActionEnum.PAUSE, ActionEnum.RESUME, ActionEnum.TERMINATE);
+
     @Autowired
     private orderStateServiceImpl orderStateServiceImpl;
     @Autowired
@@ -165,6 +172,10 @@ public class orderController {
     @PostMapping("/{orderNo}/actions/{action}")
     public Result handleAction(@PathVariable String orderNo, @PathVariable ActionEnum action,
                                HttpServletRequest request) {
+        // 校验 action 是否在用户允许集合中，PUBLISH/CANCEL_PUBLISH/START_WORK/FINISH_WORK 仅限系统内部联动触发
+        if (!USER_ALLOWED_ACTIONS.contains(action)) {
+            return Result.error(400, "操作 [" + action.getDesc() + "] 仅限系统内部触发，不支持直接 API 调用");
+        }
         try {
             Integer userId = extractUserIdFromToken(request);
             log.info("用户 {} 申请对订单 {} 进行 {}", userId, orderNo, action.getDesc());

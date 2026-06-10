@@ -14,8 +14,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 工单控制器
@@ -28,6 +30,12 @@ import java.util.Map;
 @RestController
 @RequestMapping("/workOrder")
 public class workOrderController {
+
+    /** 用户可直接调用的 Action 白名单（PUBLISH / CANCEL_PUBLISH 仅限系统内部联动触发） */
+    private static final Set<ActionEnum> USER_ALLOWED_ACTIONS =
+            EnumSet.of(ActionEnum.START_WORK, ActionEnum.FINISH_WORK,
+                       ActionEnum.PAUSE, ActionEnum.RESUME, ActionEnum.TERMINATE);
+
     @Autowired
     private workOrderServiceImpl workOrderServiceImpl;
     @Autowired
@@ -185,6 +193,10 @@ public class workOrderController {
     @PostMapping("/{workOrderNo}/actions/{action}")
     public Result handleAction(@PathVariable String workOrderNo, @PathVariable ActionEnum action,
                                HttpServletRequest request) {
+        // 校验 action 是否在用户允许集合中，PUBLISH/CANCEL_PUBLISH 仅限系统内部联动触发
+        if (!USER_ALLOWED_ACTIONS.contains(action)) {
+            return Result.error(400, "操作 [" + action.getDesc() + "] 仅限系统内部触发，不支持直接 API 调用");
+        }
         try {
             Integer userId = extractUserIdFromToken(request);
             log.info("用户 {} 申请对工单 {} 进行 {}", userId, workOrderNo, action.getDesc());

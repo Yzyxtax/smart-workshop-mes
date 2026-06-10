@@ -138,7 +138,16 @@ public class workOrderServiceImpl implements workOrderService {
         workOrder.setOrderNo(dto.getOrderNo());
         workOrder.setProcessId(dto.getProcessId());
         workOrder.setUserId(dto.getUserId());
-        workOrder.setIsCritical(dto.getIsCritical() != null ? dto.getIsCritical() : false);
+        // 若订单下尚无任何工单且调用方未显式指定，则自动标记为关键工单
+        boolean isCritical;
+        if (dto.getIsCritical() != null) {
+            isCritical = dto.getIsCritical();
+        } else {
+            List<WorkOrder> existingWorkOrders = workOrderMapper.getWorkOrdersByOrderNo(dto.getOrderNo());
+            int existingCount = existingWorkOrders != null ? existingWorkOrders.size() : 0;
+            isCritical = (existingCount == 0); // 首个工单默认为关键工单
+        }
+        workOrder.setIsCritical(isCritical);
         workOrder.setPlannedQuantity(dto.getPlannedQuantity());
         workOrder.setActualQuantity(0);
         workOrder.setScrapQuantity(0);

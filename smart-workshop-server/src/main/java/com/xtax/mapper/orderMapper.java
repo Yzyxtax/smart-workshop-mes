@@ -59,4 +59,13 @@ public interface orderMapper {
     // 更新工单状态（订单取消发布联动时使用）
     @Update("update work_order set status = #{status}, update_time = now() where work_order_no = #{workOrderNo}")
     void updateWorkOrderStatus(@Param("workOrderNo") String workOrderNo, @Param("status") StateEnum status);
+
+    // 更新订单产量统计（工单全部完成时汇总）
+    @Update("update production_order set quantity_produced = #{quantityProduced}, "
+            + "qualified_products = #{qualifiedProducts}, defective_products = #{defectiveProducts}, "
+            + "update_time = now() where order_no = #{orderNo}")
+    void updateOrderQuantity(@Param("orderNo") String orderNo,
+                             @Param("quantityProduced") Integer quantityProduced,
+                             @Param("qualifiedProducts") Integer qualifiedProducts,
+                             @Param("defectiveProducts") Integer defectiveProducts);
 }

@@ -51,6 +51,8 @@ public enum StateEnum {
             case PAUSED:
                 if (action == ActionEnum.RESUME) {
                     return RUNNING;
+                } else if (action == ActionEnum.TERMINATE) {
+                    return TERMINATED;
                 }
                 break;
             case COMPLETED:

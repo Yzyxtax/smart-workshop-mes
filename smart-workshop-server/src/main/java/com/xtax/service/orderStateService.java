@@ -5,5 +5,5 @@ import com.xtax.enums.ActionEnum;
 
 public interface orderStateService {
     void handle(String orderNo, ActionEnum action, Integer userId);
-    void handleLinkage(ProductionOrder order, ActionEnum action);
+    void handleLinkage(ProductionOrder order, ActionEnum action, Integer userId);
 }

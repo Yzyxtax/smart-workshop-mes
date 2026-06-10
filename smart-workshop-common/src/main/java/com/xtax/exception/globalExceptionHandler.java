@@ -22,6 +22,17 @@ public class globalExceptionHandler {
     }
 
     /**
+     * 权限校验异常处理器
+     * 当用户角色或身份不满足操作权限要求时抛出，映射为 HTTP 403 响应
+     */
+    @ExceptionHandler(SecurityException.class)
+    public Result handleSecurityException(SecurityException e, HttpServletResponse response) {
+        log.error("权限异常：{}", e.getMessage());
+        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+        return Result.error(403, "权限不足: " + e.getMessage());
+    }
+
+    /**
      * 参数校验异常处理器
      * 处理 @Valid 校验失败时抛出的 MethodArgumentNotValidException
      */

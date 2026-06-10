@@ -29,4 +29,8 @@ public interface planMapper {
     //更新计划状态
     @Update("update production_plan set status = #{status} where plan_no = #{planNo}")
     void updatePlanStatus(@Param("planNo") String planNo,@Param("status") StateEnum status);
+
+    //更新计划完成数量（所有订单完成时汇总）
+    @Update("update production_plan set completed_num = #{completedNum}, update_time = now() where plan_no = #{planNo}")
+    void updatePlanCompletedNum(@Param("planNo") String planNo, @Param("completedNum") Integer completedNum);
 }

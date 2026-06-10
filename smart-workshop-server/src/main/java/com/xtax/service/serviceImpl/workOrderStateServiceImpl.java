@@ -7,6 +7,7 @@ import com.xtax.enums.ActionEnum;
 import com.xtax.enums.StateEnum;
 import com.xtax.exception.BusinessException;
 import com.xtax.mapper.orderMapper;
+import com.xtax.mapper.userMapper;
 import com.xtax.mapper.workOrderMapper;
 import com.xtax.plicy.workOrderPermissionPolicy;
 import com.xtax.service.workOrderStateService;
@@ -42,6 +43,10 @@ public class workOrderStateServiceImpl implements workOrderStateService {
     private workOrderMapper workOrderMapper;
     @Autowired
     private orderMapper orderMapper;
+    @Autowired
+    private planStateServiceImpl planStateService;
+    @Autowired
+    private userMapper userMapper;
 
     /**
      * 统一的状态处理入口
@@ -124,9 +129,9 @@ public class workOrderStateServiceImpl implements workOrderStateService {
         // 7. 审计记录
         auditService.record("WORK_ORDER", context, fromStatus, toStatus);
 
-        // 8. 状态联动处理（向上联动：WorkOrder → Order）
+        // 8. 状态联动处理（向上联动：WorkOrder → Order → Plan）
         workOrder.setStatus(toStatus);
-        handleLinkage(workOrder, action);
+        handleLinkage(workOrder, action, userId);
     }
 
     /**
@@ -146,14 +151,15 @@ public class workOrderStateServiceImpl implements workOrderStateService {
 
             case PAUSE:
             case RESUME:
-                // 如果不是本工单派工人员，则需要是主管角色
-                // 实际的主管角色校验已在 workOrderPermissionPolicy 中完成（PAUSE/RESUME 不拦截）
-                // 此处只对员工做归属校验，主管可以跨工单操作
+                // 本工单派工人员，允许操作
                 if (workOrder.getUserId().equals(userId)) {
-                    // 本工单员工，允许操作
                     break;
                 }
-                // 非本工单人员：需要是主管（角色校验已通过 permissionPolicy，这里无需重复）
+                // 非本工单人员：必须是主管角色才允许跨工单操作
+                String position = userMapper.getUserById(userId).getPosition();
+                if (!"车间主任".equals(position) && !"生产主管".equals(position)) {
+                    throw new SecurityException("非本工单派工人员且非主管，无权限暂停/恢复此工单");
+                }
                 break;
 
             default:
@@ -164,16 +170,21 @@ public class workOrderStateServiceImpl implements workOrderStateService {
 
     /**
      * 工单状态变更的联动处理
-     * 向上联动：WorkOrder → Order（同步订单状态）
+     * 向上联动：WorkOrder → Order → Plan（同步订单及计划状态）
      *
      * 规则：
-     * - 任一关键工单 START_WORK → RUNNING → 订单首次变为 RUNNING
-     * - 任一关键工单 PAUSE（且无其他 RUNNING 关键工单）→ 订单变为 PAUSED
-     * - 任一关键工单 RESUME → 订单恢复为 RUNNING
-     * - 所有工单 FINISH_WORK → 订单变为 COMPLETED
+     * - 任一关键工单 START_WORK → 订单首次变为 RUNNING → 计划同步为 RUNNING
+     * - 任一关键工单 PAUSE（且无其他 RUNNING 关键工单）→ 订单变为 PAUSED → 计划同步
+     * - 任一关键工单 RESUME → 订单恢复为 RUNNING → 计划同步
+     * - 所有工单 FINISH_WORK → 订单变为 COMPLETED（含产量汇总）→ 计划同步
+     * - 所有工单 TERMINATE → 订单变为 TERMINATED → 计划同步
+     *
+     * @param workOrder 工单对象
+     * @param action    执行的动作
+     * @param userId    触发联动的操作人（透传至审计记录及计划同步）
      */
     @Override
-    public void handleLinkage(WorkOrder workOrder, ActionEnum action) {
+    public void handleLinkage(WorkOrder workOrder, ActionEnum action, Integer userId) {
         String orderNo = workOrder.getOrderNo();
         if (orderNo == null) {
             return;
@@ -234,22 +245,47 @@ public class workOrderStateServiceImpl implements workOrderStateService {
                                 && !w.getWorkOrderNo().equals(workOrder.getWorkOrderNo()));
                 if (!anyNotCompleted && currentOrderStatus != StateEnum.COMPLETED) {
                     newOrderStatus = StateEnum.COMPLETED;
+                    // 汇总工单产量到订单
+                    int totalActual = allWorkOrders.stream()
+                            .mapToInt(w -> w.getActualQuantity() != null ? w.getActualQuantity() : 0).sum();
+                    int totalScrap = allWorkOrders.stream()
+                            .mapToInt(w -> w.getScrapQuantity() != null ? w.getScrapQuantity() : 0).sum();
+                    orderMapper.updateOrderQuantity(orderNo, totalActual,
+                            totalActual - totalScrap, totalScrap);
+                    log.info("联动上传：订单 {} 产量汇总 — 实际完成={}，合格品={}，次品={}",
+                            orderNo, totalActual, totalActual - totalScrap, totalScrap);
+                }
+                break;
+
+            case TERMINATE:
+                // 所有工单均已作废时，订单同步作废
+                boolean allTerminated = allWorkOrders.stream()
+                        .allMatch(w -> w.getStatus() == StateEnum.TERMINATED
+                                || w.getWorkOrderNo().equals(workOrder.getWorkOrderNo()));
+                if (allTerminated && currentOrderStatus != StateEnum.TERMINATED
+                        && currentOrderStatus != StateEnum.COMPLETED) {
+                    newOrderStatus = StateEnum.TERMINATED;
                 }
                 break;
 
             default:
-                // PUBLISH / CANCEL_PUBLISH / TERMINATE 不触发订单状态联动
+                // PUBLISH / CANCEL_PUBLISH 不触发订单状态联动
                 break;
         }
 
         // 如果订单状态需要变更，执行更新
         if (newOrderStatus != currentOrderStatus) {
             orderMapper.updateOrderStatus(orderNo, newOrderStatus);
-            StateContext orderContext = new StateContext(orderNo, action, null);
+            StateContext orderContext = new StateContext(orderNo, action, userId);
             auditService.record("ORDER", orderContext, currentOrderStatus, newOrderStatus);
             log.info("联动上传：工单 {} 状态变更触发订单 {} 从 [{}] 变更为 [{}]",
                     workOrder.getWorkOrderNo(), orderNo,
                     currentOrderStatus.getDesc(), newOrderStatus.getDesc());
+
+            // 向上联动：Order → Plan（同步计划状态）
+            if (order.getPlanNo() != null) {
+                planStateService.syncPlanStatusFromOrders(order.getPlanNo(), userId);
+            }
         }
     }
 }

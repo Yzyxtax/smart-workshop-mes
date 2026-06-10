@@ -15,6 +15,7 @@ import com.xtax.mapper.userMapper;
 import com.xtax.plicy.GatePolicy;
 import com.xtax.plicy.orderPermissionPolicy;
 import com.xtax.service.orderStateService;
+import com.xtax.service.workOrderStateService;
 import com.xtax.stateDomain.StateContext;
 import com.xtax.stateDomain.orderStateMachine;
 import lombok.extern.slf4j.Slf4j;
@@ -51,6 +52,8 @@ public class orderStateServiceImpl implements orderStateService {
     private userMapper userMapper;
     @Autowired
     private lineMapper lineMapper;
+    @Autowired
+    private workOrderStateService workOrderStateService;
 
     /**
      * 统一的状态处理入口
@@ -138,40 +141,63 @@ public class orderStateServiceImpl implements orderStateService {
         auditService.record("ORDER", context, fromStatus, toStatus);
 
         // 8. 状态联动处理
-        handleLinkage(order, action);
+        handleLinkage(order, action, userId);
     }
 
     /**
      * 订单状态变更的联动处理
      * 向上联动：Order → Plan（同步计划状态）
-     * 向下联动：PUBLISH 时为产线各工序生成工单
+     * 向下联动：PUBLISH 时为产线各工序生成工单并自动发布
+     *
+     * @param order  订单对象
+     * @param action 执行的动作
+     * @param userId 触发联动的操作人（透传至计划同步及工单发布）
      */
     @Override
-    public void handleLinkage(ProductionOrder order, ActionEnum action) {
+    public void handleLinkage(ProductionOrder order, ActionEnum action, Integer userId) {
         // 向上联动：同步计划状态（Order → Plan）
         if (order.getPlanNo() != null) {
-            planStateService.syncPlanStatusFromOrders(order.getPlanNo(), null);
+            planStateService.syncPlanStatusFromOrders(order.getPlanNo(), userId);
         }
 
-        // 向下联动：发布时根据工艺流程生成工单
+        // 向下联动：发布时根据工艺流程生成工单并自动发布
         if (ActionEnum.PUBLISH.equals(action)) {
-            generateWorkOrders(order);
+            generateWorkOrders(order, userId);
         }
 
-        // 向下联动：取消发布时作废所有 CREATED 状态的工单
+        // 向下联动：取消发布时作废所有非终态的工单
         if (ActionEnum.CANCEL_PUBLISH.equals(action)) {
-            cancelWorkOrders(order);
+            cancelWorkOrders(order, userId);
+        }
+
+        // 向下联动：作废时终止所有非终态的工单
+        if (ActionEnum.TERMINATE.equals(action)) {
+            terminateWorkOrders(order, userId);
+        }
+
+        // 向下联动：暂停时级联暂停所有 RUNNING 的工单
+        if (ActionEnum.PAUSE.equals(action)) {
+            pauseWorkOrders(order, userId);
+        }
+
+        // 向下联动：恢复时级联恢复所有 PAUSED 的工单
+        if (ActionEnum.RESUME.equals(action)) {
+            resumeWorkOrders(order, userId);
         }
     }
 
     /**
-     * 订单发布（PUBLISH）时，根据产线绑定的工艺流程生成工单
+     * 订单发布（PUBLISH）时，根据产线绑定的工艺流程生成工单并自动发布
      * 1. 获取产线绑定的工艺流程
      * 2. 遍历每条工序
      * 3. 为每道工序查找具备技能的人员
-     * 4. 生成工单，编号格式为 {orderNo}-{processId}-{seq}
+     * 4. 生成工单（CREATED），编号格式为 {orderNo}-{processId}-{seq}
+     * 5. 自动发布工单（CREATED → RELEASED）
+     *
+     * @param order  订单对象
+     * @param userId 触发此操作的用户（透传至工单审计记录）
      */
-    private void generateWorkOrders(ProductionOrder order) {
+    private void generateWorkOrders(ProductionOrder order, Integer userId) {
         // 获取产线绑定的工艺流程 ID
         ProductionLine line = lineMapper.getLine(order.getLineNo());
         if (line == null || line.getFlowId() == null) {
@@ -206,7 +232,7 @@ public class orderStateServiceImpl implements orderStateService {
             // 生成工单编号：{orderNo}-{processId}-{seq}
             String workOrderNo = order.getOrderNo() + "-" + processId + "-" + seq;
 
-            // 构建工单对象
+            // 构建工单对象（初始状态 CREATED，后续由 PUBLISH 动作变更为 RELEASED）
             WorkOrder wo = new WorkOrder();
             wo.setWorkOrderNo(workOrderNo);
             wo.setOrderNo(order.getOrderNo());
@@ -225,13 +251,20 @@ public class orderStateServiceImpl implements orderStateService {
             orderMapper.insertWorkOrder(wo);
             log.info("订单 {} 发布联动：生成工单 {}（工序「{}」，派工人员 ID={}，关键={}）",
                     order.getOrderNo(), workOrderNo, processName, skilledUserId, wo.getIsCritical());
+
+            // 自动发布工单（CREATED → RELEASED），系统联动触发
+            workOrderStateService.handle(workOrderNo, ActionEnum.PUBLISH, userId);
+            log.info("订单 {} 发布联动：工单 {} 已自动发布", order.getOrderNo(), workOrderNo);
         }
     }
 
     /**
-     * 订单取消发布（CANCEL_PUBLISH）时，联动作废所有 CREATED 状态的工单
+     * 订单取消发布（CANCEL_PUBLISH）时，联动作废所有非终态的工单
+     *
+     * @param order  订单对象
+     * @param userId 触发此操作的用户（透传至工单审计记录）
      */
-    private void cancelWorkOrders(ProductionOrder order) {
+    private void cancelWorkOrders(ProductionOrder order, Integer userId) {
         List<WorkOrder> workOrders = orderMapper.getWorkOrdersByOrderNo(order.getOrderNo());
         if (workOrders == null || workOrders.isEmpty()) {
             log.info("订单 {} 取消发布：无下属工单，跳过", order.getOrderNo());
@@ -240,12 +273,79 @@ public class orderStateServiceImpl implements orderStateService {
 
         int cancelCount = 0;
         for (WorkOrder wo : workOrders) {
-            if (wo.getStatus() == StateEnum.CREATED) {
+            StateEnum woStatus = wo.getStatus();
+            // 处理所有非终态的工单（CREATED / RELEASED / PAUSED）
+            if (woStatus != StateEnum.COMPLETED && woStatus != StateEnum.TERMINATED) {
                 orderMapper.updateWorkOrderStatus(wo.getWorkOrderNo(), StateEnum.TERMINATED);
                 cancelCount++;
-                log.info("订单 {} 取消发布联动：工单 {} 已作废", order.getOrderNo(), wo.getWorkOrderNo());
+                log.info("订单 {} 取消发布联动：工单 {} 已作废（原状态: {}）", order.getOrderNo(), wo.getWorkOrderNo(), woStatus.getDesc());
             }
         }
-        log.info("订单 {} 取消发布联动：共作废 {} 个 CREATED 状态工单", order.getOrderNo(), cancelCount);
+        log.info("订单 {} 取消发布联动：共作废 {} 个工单", order.getOrderNo(), cancelCount);
+    }
+
+    /**
+     * 订单作废（TERMINATE）时，联动作废所有非终态的工单
+     *
+     * @param order  订单对象
+     * @param userId 触发此操作的用户
+     */
+    private void terminateWorkOrders(ProductionOrder order, Integer userId) {
+        List<WorkOrder> workOrders = orderMapper.getWorkOrdersByOrderNo(order.getOrderNo());
+        if (workOrders == null || workOrders.isEmpty()) {
+            log.info("订单 {} 作废：无下属工单，跳过", order.getOrderNo());
+            return;
+        }
+
+        int terminateCount = 0;
+        for (WorkOrder wo : workOrders) {
+            StateEnum woStatus = wo.getStatus();
+            if (woStatus != StateEnum.COMPLETED && woStatus != StateEnum.TERMINATED) {
+                orderMapper.updateWorkOrderStatus(wo.getWorkOrderNo(), StateEnum.TERMINATED);
+                terminateCount++;
+                log.info("订单 {} 作废联动：工单 {} 已作废", order.getOrderNo(), wo.getWorkOrderNo());
+            }
+        }
+        log.info("订单 {} 作废联动：共作废 {} 个工单", order.getOrderNo(), terminateCount);
+    }
+
+    /**
+     * 订单暂停（PAUSE）时，级联暂停所有 RUNNING 状态的工单
+     *
+     * @param order  订单对象
+     * @param userId 触发此操作的用户
+     */
+    private void pauseWorkOrders(ProductionOrder order, Integer userId) {
+        List<WorkOrder> workOrders = orderMapper.getWorkOrdersByOrderNo(order.getOrderNo());
+        if (workOrders == null || workOrders.isEmpty()) {
+            return;
+        }
+
+        for (WorkOrder wo : workOrders) {
+            if (wo.getStatus() == StateEnum.RUNNING) {
+                orderMapper.updateWorkOrderStatus(wo.getWorkOrderNo(), StateEnum.PAUSED);
+                log.info("订单 {} 暂停联动：工单 {} 已暂停", order.getOrderNo(), wo.getWorkOrderNo());
+            }
+        }
+    }
+
+    /**
+     * 订单恢复（RESUME）时，级联恢复所有 PAUSED 状态的工单
+     *
+     * @param order  订单对象
+     * @param userId 触发此操作的用户
+     */
+    private void resumeWorkOrders(ProductionOrder order, Integer userId) {
+        List<WorkOrder> workOrders = orderMapper.getWorkOrdersByOrderNo(order.getOrderNo());
+        if (workOrders == null || workOrders.isEmpty()) {
+            return;
+        }
+
+        for (WorkOrder wo : workOrders) {
+            if (wo.getStatus() == StateEnum.PAUSED) {
+                orderMapper.updateWorkOrderStatus(wo.getWorkOrderNo(), StateEnum.RUNNING);
+                log.info("订单 {} 恢复联动：工单 {} 已恢复", order.getOrderNo(), wo.getWorkOrderNo());
+            }
+        }
     }
 }
