@@ -1,0 +1,40 @@
+# 工单管理模块 — 本次变更涉及文件清单
+# 按模块 → 功能点排序
+
+# ==================== POJO 模块（领域对象层） ====================
+
+# --- DTO（数据传输对象） ---
+smart-workshop-pojo/src/main/java/com/xtax/dto/WorkOrderDTO.java
+smart-workshop-pojo/src/main/java/com/xtax/dto/WorkOrderUpdateDTO.java
+
+# --- Entity（实体） ---
+smart-workshop-pojo/src/main/java/com/xtax/entity/WorkOrder.java
+
+# ==================== PRODUCTION 模块（核心生产领域逻辑） ====================
+
+# --- 状态机 ---
+smart-workshop-production/src/main/java/com/xtax/stateDomain/workOrderStateMachine.java
+
+# ==================== SERVER 模块（应用入口、Web 层） ====================
+
+# --- Controller（控制器） ---
+smart-workshop-server/src/main/java/com/xtax/controller/workOrderController.java
+
+# --- Mapper（数据访问层接口） ---
+smart-workshop-server/src/main/java/com/xtax/mapper/workOrderMapper.java
+smart-workshop-server/src/main/java/com/xtax/mapper/orderMapper.java
+
+# --- Mapper XML（MyBatis SQL 映射） ---
+smart-workshop-server/src/main/resources/com/xtax/mapper/workOrderMapper.xml
+
+# --- Policy（策略/权限实现） ---
+smart-workshop-server/src/main/java/com/xtax/plicy/workOrderPermissionPolicy.java
+
+# --- Service 接口 ---
+smart-workshop-server/src/main/java/com/xtax/service/workOrderService.java
+smart-workshop-server/src/main/java/com/xtax/service/workOrderStateService.java
+
+# --- Service 实现 ---
+smart-workshop-server/src/main/java/com/xtax/service/serviceImpl/workOrderServiceImpl.java
+smart-workshop-server/src/main/java/com/xtax/service/serviceImpl/workOrderStateServiceImpl.java
+smart-workshop-server/src/main/java/com/xtax/service/serviceImpl/orderStateServiceImpl.java
