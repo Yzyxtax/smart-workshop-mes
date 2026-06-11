@@ -18,6 +18,8 @@ public class WebConfig implements WebMvcConfigurer {
 
     /**
      * 注册拦截器
+     * 注意：/role/** 和 /permission/** 不再全局排除，
+     * 改由 PermissionInterceptor 内部对 GET 请求放行，写操作受 @RequirePermission 保护
      */
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
@@ -27,8 +29,6 @@ public class WebConfig implements WebMvcConfigurer {
                 .excludePathPatterns(    // 排除不需要权限校验的路径
                         "/login",
                         "/error",
-                        "/permission/**",  // 权限查询接口不需要权限校验
-                        "/role/**",        // 角色查询接口暂时不需要权限校验（可根据需求调整）
                         "/auth/**"         // 权限校验接口本身不需要权限校验
                 );
     }

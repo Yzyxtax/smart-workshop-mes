@@ -1,5 +1,6 @@
 package com.xtax.controller;
 
+import com.xtax.annotation.RequirePermission;
 import com.xtax.dto.RoleQueryParam;
 import com.xtax.entity.Role;
 import com.xtax.service.RoleService;
@@ -55,6 +56,7 @@ public class RoleController {
      * 创建角色
      */
     @PostMapping
+    @RequirePermission("SYS_ROLE_MANAGE")
     public Result addRole(@Valid @RequestBody Role role) {
         log.info("创建角色：{}", role);
         int result = roleService.addRole(role);
@@ -68,6 +70,7 @@ public class RoleController {
      * 更新角色
      */
     @PutMapping
+    @RequirePermission("SYS_ROLE_MANAGE")
     public Result updateRole(@Valid @RequestBody Role role) {
         log.info("更新角色：{}", role);
         int result = roleService.updateRole(role);
@@ -81,6 +84,7 @@ public class RoleController {
      * 删除角色
      */
     @DeleteMapping
+    @RequirePermission("SYS_ROLE_MANAGE")
     public Result deleteRoles(@RequestParam List<Integer> ids) {
         log.info("删除角色，ids：{}", ids);
         if (ids == null || ids.isEmpty()) {

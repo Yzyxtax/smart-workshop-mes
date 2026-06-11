@@ -1,5 +1,6 @@
 package com.xtax.controller;
 
+import com.xtax.annotation.RequirePermission;
 import com.xtax.dto.AssignPermissionDTO;
 import com.xtax.service.RolePermissionService;
 import com.xtax.vo.PermissionVO;
@@ -48,6 +49,7 @@ public class RolePermissionController {
      * 为角色分配权限
      */
     @PostMapping
+    @RequirePermission("SYS_PERMISSION_ASSIGN")
     public Result assignPermissions(@Valid @RequestBody AssignPermissionDTO dto) {
         log.info("为角色分配权限：{}", dto);
         int result = rolePermissionService.assignPermissions(dto);
@@ -61,6 +63,7 @@ public class RolePermissionController {
      * 移除角色权限
      */
     @DeleteMapping
+    @RequirePermission("SYS_PERMISSION_ASSIGN")
     public Result removePermissions(@RequestParam Integer roleId, @RequestParam List<Integer> permissionIds) {
         log.info("移除角色权限，roleId：{}，permissionIds：{}", roleId, permissionIds);
         // 空列表校验：避免生成非法SQL

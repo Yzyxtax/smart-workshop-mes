@@ -47,6 +47,14 @@ public class PermissionInterceptor implements HandlerInterceptor {
             return true;
         }
 
+        // GET 请求对 role/permission 路径放行（查询类接口无需权限）
+        if ("GET".equalsIgnoreCase(request.getMethod())) {
+            String uri = request.getRequestURI();
+            if (uri.matches(".*/(role|permission)(/.*)?$")) {
+                return true;
+            }
+        }
+
         // 从请求头获取token并解析用户ID
         // 支持从 Authorization: Bearer xxx 和 token: xxx 两种方式获取
         String authHeader = request.getHeader("Authorization");

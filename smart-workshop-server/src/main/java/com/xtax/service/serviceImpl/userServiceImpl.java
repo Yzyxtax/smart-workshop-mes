@@ -6,6 +6,7 @@ import com.xtax.dto.UserQueryParam;
 import com.xtax.entity.FreeUserName;
 import com.xtax.entity.LoginInfo;
 import com.xtax.entity.User;
+import com.xtax.mapper.UserRoleMapper;
 import com.xtax.mapper.userMapper;
 import com.xtax.service.userService;
 import com.xtax.utils.JwtUtils;
@@ -24,6 +25,9 @@ import java.util.Map;
 public class userServiceImpl implements userService {
     @Autowired
     private userMapper userMapper;
+
+    @Autowired
+    private UserRoleMapper userRoleMapper;
 
     //条件分页查询所有用户信息
     @Override
@@ -56,7 +60,12 @@ public class userServiceImpl implements userService {
 
     //删除用户信息
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public int deleteUsers(List<Integer> ids) {
+        // 先级联删除用户角色关联，避免外键约束异常
+        for (Integer id : ids) {
+            userRoleMapper.deleteUserRolesByUserId(id);
+        }
         return userMapper.deleteUsers(ids);
     }
 

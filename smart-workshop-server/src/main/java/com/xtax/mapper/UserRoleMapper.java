@@ -43,4 +43,9 @@ public interface UserRoleMapper {
      * 删除用户的所有角色关联（用于删除用户时级联删除）
      */
     int deleteUserRolesByUserId(Integer userId);
+
+    /**
+     * 删除角色的所有用户关联（用于删除角色时级联删除）
+     */
+    int deleteUserRolesByRoleId(Integer roleId);
 }

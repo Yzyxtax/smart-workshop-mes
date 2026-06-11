@@ -49,4 +49,9 @@
     <delete id="deleteUserRolesByUserId">
         delete from user_role where user_id = #{userId}
     </delete>
+
+    <!-- 删除角色的所有用户关联（用于删除角色时级联删除） -->
+    <delete id="deleteUserRolesByRoleId">
+        delete from user_role where role_id = #{roleId}
+    </delete>
 </mapper>
