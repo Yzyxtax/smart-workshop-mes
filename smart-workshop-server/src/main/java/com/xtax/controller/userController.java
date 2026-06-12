@@ -1,5 +1,6 @@
 package com.xtax.controller;
 
+import com.xtax.annotation.RequirePermission;
 import com.xtax.dto.UserQueryParam;
 import com.xtax.entity.FreeUserName;
 import com.xtax.entity.User;
@@ -36,6 +37,7 @@ public class userController {
         return Result.error("查询失败");
     }
 
+    @RequirePermission("SYS_USER_CREATE")
     @PostMapping
     public Result addUser(@RequestBody UserVO user){
         log.info("添加用户：{}", user);
@@ -44,6 +46,7 @@ public class userController {
         return Result.error("添加失败");
     }
 
+    @RequirePermission("SYS_USER_DELETE")
     @DeleteMapping
     public Result deleteUsers(@RequestParam List<Integer> ids){
         log.info("删除id为{}的用户",ids);
@@ -60,6 +63,7 @@ public class userController {
         return Result.error("查询失败");
     }
 
+    @RequirePermission("SYS_USER_UPDATE")
     @PutMapping
     public Result updateUser(@RequestBody UserVO user){
         log.info("更新用户信息：{}", user);
