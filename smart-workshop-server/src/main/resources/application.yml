@@ -6,6 +6,9 @@ spring:
     url: jdbc:mysql://mysql5.sqlpub.com:3310/smart_workshop
     username: yzyxtax
     password: r6L4mWZUkYczMzQu
+  config:
+    import:
+      - classpath:application-ai.yml
 
 mybatis:
   configuration:

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xtax.ai.mapper.AiAuditLogMapper">
+
+    <!-- 审计日志结果映射 -->
+    <resultMap id="AiAuditLogMap" type="com.xtax.ai.entity.AiAuditLog">
+        <id column="id" property="id"/>
+        <result column="session_id" property="sessionId"/>
+        <result column="message_id" property="messageId"/>
+        <result column="user_id" property="userId"/>
+        <result column="tool_name" property="toolName"/>
+        <result column="tool_params" property="toolParams"/>
+        <result column="execution_result" property="executionResult"/>
+        <result column="target_type" property="targetType"/>
+        <result column="target_id" property="targetId"/>
+        <result column="success" property="success"/>
+        <result column="error_message" property="errorMessage"/>
+        <result column="duration_ms" property="durationMs"/>
+        <result column="user_natural_input" property="userNaturalInput"/>
+        <result column="created_at" property="createdAt"/>
+    </resultMap>
+
+    <!-- 分页动态查询审计日志 -->
+    <select id="selectByCondition" resultMap="AiAuditLogMap">
+        SELECT id, session_id, message_id, user_id, tool_name, tool_params,
+               execution_result, target_type, target_id, success, error_message,
+               duration_ms, user_natural_input, created_at
+        FROM ai_audit_log
+        <where>
+            <if test="userId != null">
+                AND user_id = #{userId}
+            </if>
+            <if test="toolName != null and toolName != ''">
+                AND tool_name = #{toolName}
+            </if>
+            <if test="startTime != null and startTime != ''">
+                AND created_at &gt;= #{startTime}
+            </if>
+            <if test="endTime != null and endTime != ''">
+                AND created_at &lt;= #{endTime}
+            </if>
+            <if test="success != null">
+                AND success = #{success}
+            </if>
+        </where>
+        ORDER BY created_at DESC
+    </select>
+
+</mapper>

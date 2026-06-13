@@ -90,6 +90,12 @@
             <groupId>com.xtax</groupId>
             <artifactId>smart-workshop-production</artifactId>
         </dependency>
+
+<!--        ai模块依赖-->
+        <dependency>
+            <groupId>com.xtax</groupId>
+            <artifactId>smart-workshop-ai</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
@@ -126,7 +132,7 @@
                 <configuration>
                     <forkCount>0</forkCount>
                     <reuseForks>false</reuseForks>
-                    <skipTests>true</skipTests>
+                    <skipTests>false</skipTests>
                 </configuration>
             </plugin>
         </plugins>
