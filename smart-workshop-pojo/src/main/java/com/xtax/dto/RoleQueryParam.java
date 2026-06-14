@@ -14,4 +14,15 @@ public class RoleQueryParam {
     @Min(value = 1, message = "每页条数必须大于0")
     private Integer pageSize;
     private String roleName;
+
+    /**
+     * 计算分页偏移量
+     * @return OFFSET 值，page 或 pageSize 为 null 时返回 null
+     */
+    public Integer getOffset() {
+        if (page != null && pageSize != null && page > 0 && pageSize > 0) {
+            return (page - 1) * pageSize;
+        }
+        return null;
+    }
 }
