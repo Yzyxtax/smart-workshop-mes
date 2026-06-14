@@ -108,7 +108,8 @@ public class AiChatController {
      */
     @PostMapping(value = "/sessions/{sessionId}/messages",
             produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter sendMessage(@PathVariable Long sessionId,
+    public SseEmitter sendMessage(HttpServletRequest request,
+                                   @PathVariable Long sessionId,
                                    @RequestBody SendMessageRequest body) {
         // 参数校验
         if (body.getContent() == null || body.getContent().trim().isEmpty()) {
@@ -130,10 +131,24 @@ public class AiChatController {
             return errorEmitter;
         }
 
+        // ✅ 关键：在父线程（HTTP 工作线程）中预先提取用户信息，
+        // 因为 AiAgentServiceImpl.process() 已改为 @Async 异步执行，
+        // 子线程中无法再通过 RequestContextHolder 取到 HttpServletRequest。
+        body.setUserId(extractUserId(request));
+        body.setUserName(extractUserName(request));
+
         // 创建 SSE 发射器，超时时间 5 分钟
         SseEmitter emitter = new SseEmitter(300_000L);
 
-        // 异步处理 AI 对话
+        // 注册生命周期回调，避免静默丢失（出现问题时至少能在日志里看到）
+        emitter.onTimeout(() -> {
+            log.warn("SSE emitter 超时: sessionId={}", sessionId);
+            emitter.complete();
+        });
+        emitter.onError(ex -> log.warn("SSE emitter 错误: sessionId={}, msg={}", sessionId, ex.getMessage()));
+        emitter.onCompletion(() -> log.debug("SSE emitter 已完成: sessionId={}", sessionId));
+
+        // 异步处理 AI 对话（不会阻塞当前线程，emitter 立即返回给 Spring）
         aiAgentService.process(sessionId, body, emitter);
 
         return emitter;
@@ -155,6 +170,23 @@ public class AiChatController {
             log.warn("提取用户 ID 失败", e);
         }
         return 0;
+    }
+
+    /**
+     * 从 JWT Token 中提取用户名
+     */
+    private String extractUserName(HttpServletRequest request) {
+        try {
+            String token = extractToken(request);
+            if (token != null) {
+                Map<String, Object> claims = JwtUtils.parseToken(token);
+                Object nameObj = claims.get("name");
+                if (nameObj != null) return nameObj.toString();
+            }
+        } catch (Exception e) {
+            log.warn("提取用户名失败", e);
+        }
+        return "未知用户";
     }
 
     /**

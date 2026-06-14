@@ -12,19 +12,15 @@ import com.xtax.ai.exception.AiServiceException;
 import com.xtax.ai.mapper.AiChatMessageMapper;
 import com.xtax.ai.service.AiMetricsService;
 import com.xtax.ai.service.AiSessionService;
-import com.xtax.utils.JwtUtils;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import reactor.core.publisher.Flux;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * AI Agent 调度器实现。
@@ -58,6 +54,7 @@ public class AiAgentServiceImpl implements AiAgentService {
     );
 
     @Override
+    @Async("aiTaskExecutor")
     public void process(Long sessionId, SendMessageRequest request, SseEmitter emitter) {
         long startTime = System.currentTimeMillis();
         try {
@@ -66,8 +63,9 @@ public class AiAgentServiceImpl implements AiAgentService {
             sessionService.autoGenerateTitle(sessionId, request.getContent());
             sessionService.touchSession(sessionId);
 
-            // 获取当前用户信息
-            Integer userId = getCurrentUserId();
+            // 获取当前用户信息（已由 Controller 在父线程中预提取并放入 request）
+            Integer userId = request.getUserId() != null ? request.getUserId() : 0;
+            String userName = request.getUserName() != null ? request.getUserName() : "未知用户";
 
             // ===== Phase 2: 组装上下文 =====
             List<Map<String, Object>> messages = buildContextMessages(sessionId, userId);
@@ -111,6 +109,30 @@ public class AiAgentServiceImpl implements AiAgentService {
                         sendSseEvent(emitter, SseEventType.TEXT_DELTA, Map.of("content", delta));
                     } else if (event.getType() == AiEvent.EventType.TOOL_USE) {
                         hasToolUse = true;
+
+                        // ✅ 关键修复：在追加 role=tool 结果消息之前，
+                        // 必须先把 assistant 自己的 tool_calls 消息追加到上下文。
+                        // 这是 OpenAI / DeepSeek 协议的强制要求，否则下一轮会 400 Bad Request。
+                        List<Map<String, Object>> toolCallsForAssistant = new ArrayList<>();
+                        for (AiEvent.ToolUse tu : event.getToolUses()) {
+                            Map<String, Object> functionPart = new LinkedHashMap<>();
+                            functionPart.put("name", tu.getName());
+                            // OpenAI 协议要求 arguments 是 JSON 字符串，不是对象
+                            functionPart.put("arguments", toJson(tu.getParams()));
+
+                            Map<String, Object> tcEntry = new LinkedHashMap<>();
+                            tcEntry.put("id", tu.getId());
+                            tcEntry.put("type", "function");
+                            tcEntry.put("function", functionPart);
+                            toolCallsForAssistant.add(tcEntry);
+                        }
+                        Map<String, Object> assistantToolCallMsg = new LinkedHashMap<>();
+                        assistantToolCallMsg.put("role", "assistant");
+                        // content 必须存在，可以为空串；许多兼容实现不接受 null
+                        assistantToolCallMsg.put("content", "");
+                        assistantToolCallMsg.put("tool_calls", toolCallsForAssistant);
+                        messages.add(assistantToolCallMsg);
+
                         // 执行每一个工具调用
                         for (AiEvent.ToolUse toolUse : event.getToolUses()) {
                             sendSseEvent(emitter, SseEventType.TOOL_CALL, Map.of(
@@ -121,7 +143,7 @@ public class AiAgentServiceImpl implements AiAgentService {
                             // 构建执行上下文
                             ToolContext ctx = ToolContext.builder()
                                     .userId(userId)
-                                    .userName(getCurrentUserName())
+                                    .userName(userName)
                                     .sessionId(sessionId)
                                     .messageId(userMsg.getId())
                                     .userNaturalInput(request.getContent())
@@ -270,60 +292,8 @@ public class AiAgentServiceImpl implements AiAgentService {
     }
 
     // ========== 用户信息提取 ==========
-
-    /**
-     * 从请求上下文中获取当前用户 ID
-     */
-    private Integer getCurrentUserId() {
-        try {
-            ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-            if (attrs != null) {
-                HttpServletRequest request = attrs.getRequest();
-                String token = extractToken(request);
-                if (token != null) {
-                    Map<String, Object> claims = JwtUtils.parseToken(token);
-                    Object idObj = claims.get("id");
-                    if (idObj instanceof Integer) return (Integer) idObj;
-                    if (idObj instanceof Number) return ((Number) idObj).intValue();
-                }
-            }
-        } catch (Exception e) {
-            log.warn("获取当前用户 ID 失败", e);
-        }
-        return 0; // 默认值
-    }
-
-    /**
-     * 从请求上下文中获取当前用户名
-     */
-    private String getCurrentUserName() {
-        try {
-            ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-            if (attrs != null) {
-                HttpServletRequest request = attrs.getRequest();
-                String token = extractToken(request);
-                if (token != null) {
-                    Map<String, Object> claims = JwtUtils.parseToken(token);
-                    Object nameObj = claims.get("name");
-                    if (nameObj != null) return nameObj.toString();
-                }
-            }
-        } catch (Exception e) {
-            log.warn("获取当前用户名失败", e);
-        }
-        return "未知用户";
-    }
-
-    /**
-     * 从请求中提取 JWT token
-     */
-    private String extractToken(HttpServletRequest request) {
-        String authHeader = request.getHeader("Authorization");
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            return authHeader.substring(7);
-        }
-        return request.getHeader("token");
-    }
+    // 注意：因 process() 已改为 @Async 异步执行，子线程无法访问 RequestContextHolder，
+    // 用户信息（userId / userName）改由 Controller 在父线程中提取后通过 SendMessageRequest 传入。
 
     // ========== 辅助方法 ==========
 

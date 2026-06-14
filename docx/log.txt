@@ -1,0 +1,37 @@
+2026-06-14 22:58:19.422 [http-nio-8080-exec-1] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-06-14 22:58:19.422 [http-nio-8080-exec-1] INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2026-06-14 22:58:19.425 [http-nio-8080-exec-1] INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 2 ms
+2026-06-14 22:58:19.430 [http-nio-8080-exec-1] INFO  com.xtax.filter.LoginFilter - 进入过滤器LoginFilter
+2026-06-14 22:58:19.509 [http-nio-8080-exec-1] INFO  com.xtax.filter.LoginFilter - token验证成功，放行
+2026-06-14 22:58:19.635 [http-nio-8080-exec-1] DEBUG o.s.j.support.JdbcTransactionManager - Creating new transaction with name [com.xtax.ai.service.impl.AiSessionServiceImpl.createSession]: PROPAGATION_REQUIRED,ISOLATION_DEFAULT,-java.lang.Exception
+2026-06-14 22:58:19.636 [http-nio-8080-exec-1] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+2026-06-14 22:58:20.247 [http-nio-8080-exec-1] INFO  com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@35241f17
+2026-06-14 22:58:20.248 [http-nio-8080-exec-1] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+2026-06-14 22:58:20.252 [http-nio-8080-exec-1] DEBUG o.s.j.support.JdbcTransactionManager - Acquired Connection [HikariProxyConnection@119669233 wrapping com.mysql.cj.jdbc.ConnectionImpl@35241f17] for JDBC transaction
+2026-06-14 22:58:20.258 [http-nio-8080-exec-1] DEBUG o.s.j.support.JdbcTransactionManager - Switching JDBC Connection [HikariProxyConnection@119669233 wrapping com.mysql.cj.jdbc.ConnectionImpl@35241f17] to manual commit
+2026-06-14 22:58:20.410 [http-nio-8080-exec-1] INFO  c.x.a.s.impl.AiSessionServiceImpl - 创建 AI 会话: id=3, userId=2
+2026-06-14 22:58:20.415 [http-nio-8080-exec-1] DEBUG o.s.j.support.JdbcTransactionManager - Initiating transaction commit
+2026-06-14 22:58:20.416 [http-nio-8080-exec-1] DEBUG o.s.j.support.JdbcTransactionManager - Committing JDBC transaction on Connection [HikariProxyConnection@119669233 wrapping com.mysql.cj.jdbc.ConnectionImpl@35241f17]
+2026-06-14 22:58:20.460 [http-nio-8080-exec-1] DEBUG o.s.j.support.JdbcTransactionManager - Releasing JDBC Connection [HikariProxyConnection@119669233 wrapping com.mysql.cj.jdbc.ConnectionImpl@35241f17] after transaction
+2026-06-14 22:58:25.552 [http-nio-8080-exec-3] INFO  com.xtax.filter.LoginFilter - 进入过滤器LoginFilter
+2026-06-14 22:58:25.554 [http-nio-8080-exec-3] INFO  com.xtax.filter.LoginFilter - token验证成功，放行
+2026-06-14 22:58:25.627 [http-nio-8080-exec-3] DEBUG o.s.j.support.JdbcTransactionManager - Creating new transaction with name [com.xtax.ai.service.impl.AiSessionServiceImpl.saveUserMessage]: PROPAGATION_REQUIRED,ISOLATION_DEFAULT,-java.lang.Exception
+2026-06-14 22:58:25.627 [http-nio-8080-exec-3] DEBUG o.s.j.support.JdbcTransactionManager - Acquired Connection [HikariProxyConnection@1411586204 wrapping com.mysql.cj.jdbc.ConnectionImpl@35241f17] for JDBC transaction
+2026-06-14 22:58:25.627 [http-nio-8080-exec-3] DEBUG o.s.j.support.JdbcTransactionManager - Switching JDBC Connection [HikariProxyConnection@1411586204 wrapping com.mysql.cj.jdbc.ConnectionImpl@35241f17] to manual commit
+2026-06-14 22:58:25.694 [http-nio-8080-exec-3] DEBUG o.s.j.support.JdbcTransactionManager - Initiating transaction commit
+2026-06-14 22:58:25.694 [http-nio-8080-exec-3] DEBUG o.s.j.support.JdbcTransactionManager - Committing JDBC transaction on Connection [HikariProxyConnection@1411586204 wrapping com.mysql.cj.jdbc.ConnectionImpl@35241f17]
+2026-06-14 22:58:25.736 [http-nio-8080-exec-3] DEBUG o.s.j.support.JdbcTransactionManager - Releasing JDBC Connection [HikariProxyConnection@1411586204 wrapping com.mysql.cj.jdbc.ConnectionImpl@35241f17] after transaction
+2026-06-14 22:58:25.738 [http-nio-8080-exec-3] DEBUG o.s.j.support.JdbcTransactionManager - Creating new transaction with name [com.xtax.ai.service.impl.AiSessionServiceImpl.autoGenerateTitle]: PROPAGATION_REQUIRED,ISOLATION_DEFAULT,-java.lang.Exception
+2026-06-14 22:58:25.738 [http-nio-8080-exec-3] DEBUG o.s.j.support.JdbcTransactionManager - Acquired Connection [HikariProxyConnection@201993081 wrapping com.mysql.cj.jdbc.ConnectionImpl@35241f17] for JDBC transaction
+2026-06-14 22:58:25.738 [http-nio-8080-exec-3] DEBUG o.s.j.support.JdbcTransactionManager - Switching JDBC Connection [HikariProxyConnection@201993081 wrapping com.mysql.cj.jdbc.ConnectionImpl@35241f17] to manual commit
+2026-06-14 22:58:25.825 [http-nio-8080-exec-3] DEBUG o.s.j.support.JdbcTransactionManager - Initiating transaction commit
+2026-06-14 22:58:25.825 [http-nio-8080-exec-3] DEBUG o.s.j.support.JdbcTransactionManager - Committing JDBC transaction on Connection [HikariProxyConnection@201993081 wrapping com.mysql.cj.jdbc.ConnectionImpl@35241f17]
+2026-06-14 22:58:25.865 [http-nio-8080-exec-3] DEBUG o.s.j.support.JdbcTransactionManager - Releasing JDBC Connection [HikariProxyConnection@201993081 wrapping com.mysql.cj.jdbc.ConnectionImpl@35241f17] after transaction
+2026-06-14 22:58:30.075 [http-nio-8080-exec-3] DEBUG o.s.j.support.JdbcTransactionManager - Creating new transaction with name [com.xtax.ai.service.impl.AiSessionServiceImpl.saveAssistantMessage]: PROPAGATION_REQUIRED,ISOLATION_DEFAULT,-java.lang.Exception
+2026-06-14 22:58:30.094 [http-nio-8080-exec-3] DEBUG o.s.j.support.JdbcTransactionManager - Acquired Connection [HikariProxyConnection@40775003 wrapping com.mysql.cj.jdbc.ConnectionImpl@35241f17] for JDBC transaction
+2026-06-14 22:58:30.095 [http-nio-8080-exec-3] DEBUG o.s.j.support.JdbcTransactionManager - Switching JDBC Connection [HikariProxyConnection@40775003 wrapping com.mysql.cj.jdbc.ConnectionImpl@35241f17] to manual commit
+2026-06-14 22:58:30.157 [http-nio-8080-exec-3] DEBUG o.s.j.support.JdbcTransactionManager - Initiating transaction commit
+2026-06-14 22:58:30.157 [http-nio-8080-exec-3] DEBUG o.s.j.support.JdbcTransactionManager - Committing JDBC transaction on Connection [HikariProxyConnection@40775003 wrapping com.mysql.cj.jdbc.ConnectionImpl@35241f17]
+2026-06-14 22:58:30.198 [http-nio-8080-exec-3] DEBUG o.s.j.support.JdbcTransactionManager - Releasing JDBC Connection [HikariProxyConnection@40775003 wrapping com.mysql.cj.jdbc.ConnectionImpl@35241f17] after transaction
+2026-06-14 22:58:30.258 [http-nio-8080-exec-4] INFO  com.xtax.filter.LoginFilter - 进入过滤器LoginFilter
+2026-06-14 22:58:30.258 [http-nio-8080-exec-4] INFO  com.xtax.filter.LoginFilter - token验证成功，放行
