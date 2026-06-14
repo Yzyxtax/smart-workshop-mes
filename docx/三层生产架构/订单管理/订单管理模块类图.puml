@@ -1,0 +1,293 @@
+@startuml
+' ============================================================
+' MES 订单管理模块 - 类图
+' 版本: v1.2 | 日期: 2026-06-10
+' 变更: v1.2 — 级联方法补全工单审计记录（Fix 13），4 条级联路径审计全覆盖
+' ============================================================
+
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+
+' ============================================================
+' pojo 模块 — 领域对象层
+' ============================================================
+package "pojo 领域层" #LightYellow {
+
+  class ProductionOrder {
+    orderNo: String
+    planNo: String
+    lineNo: String
+    orderName: String
+    quantity: Integer
+    quantityProduced: Integer
+    qualifiedProducts: Integer
+    defectiveProducts: Integer
+    status: StateEnum
+    remark: String
+    actualStartTime: LocalDateTime
+    actualEndTime: LocalDateTime
+    startTime: LocalDateTime
+    endTime: LocalDateTime
+    createTime: LocalDateTime
+    updateTime: LocalDateTime
+  }
+
+  class WorkOrder {
+    orderNo: String
+    workOrderNo: String
+    processId: Integer
+    userId: Integer
+    isCritical: Boolean
+    plannedQuantity: Integer
+    actualQuantity: Integer
+    scrapQuantity: Integer
+    status: StateEnum
+    startTime: LocalDateTime
+    endTime: LocalDateTime
+    actualStartTime: LocalDateTime
+    actualEndTime: LocalDateTime
+    remark: String
+    createTime: LocalDateTime
+    updateTime: LocalDateTime
+  }
+
+  enum StateEnum {
+    CREATED / RELEASED
+    RUNNING / PAUSED
+    COMPLETED / TERMINATED
+    --
+    + next(ActionEnum): StateEnum
+  }
+
+  enum ActionEnum {
+    PUBLISH
+    CANCEL_PUBLISH
+    PAUSE
+    RESUME
+    START_WORK
+    FINISH_WORK
+    TERMINATE
+  }
+
+  class OrderDTO <<新增>> #LightGreen {
+    planNo: String
+    lineNo: String
+    orderName: String
+    quantity: Integer
+    startTime: LocalDateTime
+    endTime: LocalDateTime
+    remark: String
+  }
+
+  class OrderUpdateDTO <<修改>> #LightGreen {
+    orderName: String
+    lineNo: String
+    planNo: String
+    quantity: Integer
+    startTime: LocalDateTime
+    endTime: LocalDateTime
+    remark: String
+  }
+}
+
+' ============================================================
+' production 模块 — 核心生产领域层
+' ============================================================
+package "production 生产层" #LightBlue {
+
+  class StateContext {
+    bizNo: String
+    action: ActionEnum
+    userId: Integer
+  }
+
+  class orderStateMachine <<Component>> {
+    - STATE_ACTION_MAP: Map~StateEnum, Set~ActionEnum~
+    --
+    + check(StateEnum current, ActionEnum action): void
+    + isAllowed(StateEnum current, ActionEnum action): boolean
+  }
+
+  interface PermissionPolicy {
+    + check(Integer userId, ActionEnum action): void
+  }
+
+  interface GatePolicyInterface {
+    + check(StateContext context): void
+  }
+}
+
+' ============================================================
+' server 模块 — 应用入口 / Web 层
+' ============================================================
+package "server 应用层" #LightCoral {
+
+  class orderController <<@RestController\n@RequestMapping("/order")>> {
+    - USER_ALLOWED_ACTIONS: Set~ActionEnum~ = {PAUSE, RESUME, TERMINATE}
+    --
+    + getOrderByPlan(planNo): Result
+    + getAllOrder(): Result
+    + getOrderByNo(orderNo): Result
+    + getWorkOrders(orderNo): Result
+    + addOrder(OrderDTO): Result
+    + deleteOrder(orderNo): Result
+    + updateOrder(orderNo, OrderUpdateDTO): Result
+    + handleAction(orderNo, action, request): Result
+    - extractUserIdFromToken(request): Integer
+  }
+
+  ' === Service 接口 ===
+
+  interface orderStateService {
+    + handle(orderNo: String, action: ActionEnum, userId: Integer): void
+    + handleLinkage(order: ProductionOrder, action: ActionEnum, userId: Integer): void
+  }
+
+  interface orderService <<CRUD>> {
+    + getAllOrder(): List~ProductionOrder~
+    + getOrderByPlan(planNo: String): List~ProductionOrder~
+    + getOrderByNo(orderNo: String): ProductionOrder
+    + addOrder(dto: OrderDTO): ProductionOrder
+    + deleteOrder(orderNo: String): void
+    + updateOrder(orderNo: String, dto: OrderUpdateDTO): void
+    + getWorkOrdersByOrderNo(orderNo: String): List~WorkOrder~
+  }
+
+  ' === Service 实现 ===
+
+  class orderStateServiceImpl <<@Service @Transactional>> {
+    - orderStateMachine: orderStateMachine
+    - permissionPolicy: orderPermissionPolicy
+    - gatePolicy: GatePolicy
+    - auditService: AuditService
+    - orderMapper: orderMapper
+    - planStateService: planStateServiceImpl
+    - workOrderStateService: workOrderStateService
+    - processFlowMapper: processFlowMapper
+    - processMapper: processMapper
+    - userMapper: userMapper
+    - lineMapper: lineMapper
+    --
+    + handle(orderNo, action, userId): void
+    + handleLinkage(order, action, userId): void
+    - generateWorkOrders(order, userId): void
+    - cancelWorkOrders(order, userId): void  📝 含WO审计
+    - terminateWorkOrders(order, userId): void  📝 含WO审计
+    - pauseWorkOrders(order, userId): void  📝 含WO审计
+    - resumeWorkOrders(order, userId): void  📝 含WO审计
+  }
+  note right of orderStateServiceImpl
+    v1.2: cancelWorkOrders / terminateWorkOrders
+    / pauseWorkOrders / resumeWorkOrders
+    均通过 auditService.record("WORK_ORDER")
+    记录级联工单审计，与 Plan 层对齐
+  end note
+
+  class orderServiceImpl <<@Service>> {
+    - orderMapper: orderMapper
+    - planMapper: planMapper
+    - lineMapper: lineMapper
+    --
+    + getAllOrder(): List~ProductionOrder~
+    + getOrderByPlan(planNo): List~ProductionOrder~
+    + getOrderByNo(orderNo): ProductionOrder
+    + addOrder(dto): ProductionOrder
+    + deleteOrder(orderNo): void
+    + updateOrder(orderNo, dto): void
+    + getWorkOrdersByOrderNo(orderNo): List~WorkOrder~
+  }
+
+  ' === 策略 ===
+
+  class orderPermissionPolicy <<@Component>> {
+    - userMapper: userMapper
+    --
+    + check(userId, action): void
+  }
+
+  class OrderGatePolicy <<@Component>> {
+    - lineMapper: lineMapper
+    - processFlowMapper: processFlowMapper
+    - userMapper: userMapper
+    --
+    + checkOrder(context: StateContext, planNo, lineNo): void
+    - checkLineAvailable(lineNo): void
+    - checkProcessComplete(lineNo): void
+    - checkStaffAvailable(lineNo): void
+  }
+
+  ' === 基础设施 ===
+
+  class AuditService {
+    - auditMapper
+    --
+    + record(targetType, context, fromStatus, toStatus): void
+    + getLastPauseRecord(targetType, targetNo): StatusRecord
+  }
+
+  interface orderMapper <<@Mapper>> {
+    + getOrderByPlan(planNo): List~ProductionOrder~
+    + getAllOrder(): List~ProductionOrder~
+    + getOrderByNo(orderNo): ProductionOrder
+    + addOrder(order): int
+    + updateOrderStatus(orderNo, status): void
+    + updateOrderStatusAndStartTime(orderNo, status): void
+    + updateOrderStatusAndEndTime(orderNo, status): void
+    + updateOrder(order): void
+    + deleteOrderByNo(orderNo): void
+    + countByPlanAndLine(planNo, lineNo): int
+    + getWorkOrdersByOrderNo(orderNo): List~WorkOrder~
+    + insertWorkOrder(workOrder): void
+    + updateWorkOrderStatus(workOrderNo, status): void
+    + updateOrderQuantity(orderNo, produced, qualified, defective): void
+  }
+}
+
+' ============================================================
+' 关系连线
+' ============================================================
+
+' 实体关联
+ProductionOrder "1" --> "*" WorkOrder : 包含
+ProductionOrder --> StateEnum : status
+
+' Controller 依赖
+orderController --> orderStateServiceImpl : 状态操作（PAUSE/RESUME/TERMINATE）
+orderController --> orderServiceImpl : CRUD 操作
+orderController ..> OrderDTO : 接收
+orderController ..> OrderUpdateDTO : 接收
+
+' 接口实现
+orderStateServiceImpl .up.|> orderStateService
+orderServiceImpl .up.|> orderService
+orderPermissionPolicy .up.|> PermissionPolicy
+OrderGatePolicy .up.|> GatePolicyInterface
+
+' orderStateServiceImpl 管道依赖（按管道顺序）
+orderStateServiceImpl --> orderStateMachine : "③ 状态规则校验"
+orderStateServiceImpl --> orderPermissionPolicy : "② 权限校验"
+orderStateServiceImpl --> OrderGatePolicy : "④ 发布门禁"
+orderStateServiceImpl --> AuditService : "⑦ 审计记录"
+orderStateServiceImpl --> orderMapper : "⑥ 持久化"
+orderStateServiceImpl ..> ProductionOrder : "① 获取/操作"
+
+' 联动关系
+orderStateServiceImpl ..> planStateServiceImpl : <<向上联动>>\n同步 Plan 状态
+orderStateServiceImpl --> workOrderStateService : <<向下联动>>\n自动发布工单
+
+' 策略依赖
+orderPermissionPolicy --> userMapper : 查询用户职位
+OrderGatePolicy --> lineMapper : 产线查询
+OrderGatePolicy --> processFlowMapper : 工艺查询
+OrderGatePolicy --> userMapper : 人员查询
+
+' CRUD 服务依赖
+orderServiceImpl --> orderMapper : 持久化
+orderServiceImpl --> planMapper : 计划校验
+orderServiceImpl --> lineMapper : 产线校验
+
+' DTO 映射
+OrderDTO ..> ProductionOrder : 映射为
+OrderUpdateDTO ..> ProductionOrder : 部分映射
+
+@enduml

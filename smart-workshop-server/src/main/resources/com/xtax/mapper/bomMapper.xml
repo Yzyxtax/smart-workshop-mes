@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xtax.mapper.bomMapper">
+<!--    修改-->
+    <update id="updateBom">
+        update bom set parent_id=#{parentId},drawing_no=#{drawingNo},name_specification=#{nameSpecification},
+                       material=#{material},quantity=#{quantity},unit_weight=#{unitWeight},
+                       type=#{type}
+        where id=#{id}
+    </update>
+
+<!--    添加-->
+    <insert id="addBom" useGeneratedKeys="true" keyColumn="id" keyProperty="id">
+        insert into bom(parent_id,drawing_no,name_specification,material,quantity,unit_weight,type) value
+        (#{parentId},#{drawingNo},#{nameSpecification},#{material},#{quantity},#{unitWeight},#{type})
+    </insert>
+
+<!--    批量删除-->
+    <delete id="deleteBom">
+        delete from bom where id in
+        <foreach collection="ids" item="id" separator="," close=")" open="(">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

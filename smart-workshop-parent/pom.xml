@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.5.7</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>com.xtax</groupId>
+    <artifactId>smart-workshop-parent</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <name>smart-workshop-parent</name>
+    <description>smart-workshop-parent</description>
+
+    <packaging>pom</packaging>
+
+    <properties>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <spring-boot.version>3.5.7</spring-boot.version>
+        <mybatis.version>3.5.15</mybatis.version>
+        <lombok.version>1.18.40</lombok.version>
+        <jjwt.version>0.9.1</jjwt.version>
+        <jackson.version>2.21</jackson.version>
+        <logback.version>1.5.13</logback.version>
+        <mybatis-spring-boot.version>3.0.5</mybatis-spring-boot.version>
+        <pagehelper.version>4.0.0</pagehelper.version>
+        <jaxb.version>2.3.1</jaxb.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- Spring Boot BOM 导入 -->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- 内部模块依赖 -->
+            <dependency>
+                <groupId>com.xtax</groupId>
+                <artifactId>smart-workshop-pojo</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xtax</groupId>
+                <artifactId>smart-workshop-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xtax</groupId>
+                <artifactId>smart-workshop-production</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xtax</groupId>
+                <artifactId>smart-workshop-ai</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xtax</groupId>
+                <artifactId>smart-workshop-server</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <!-- ========== 第三方依赖版本管理（补充缺失的） ========== -->
+            <!-- MyBatis Spring Boot Starter -->
+            <dependency>
+                <groupId>org.mybatis.spring.boot</groupId>
+                <artifactId>mybatis-spring-boot-starter</artifactId>
+                <version>${mybatis-spring-boot.version}</version>
+            </dependency>
+
+            <!-- MyBatis Spring Boot Starter Test -->
+            <dependency>
+                <groupId>org.mybatis.spring.boot</groupId>
+                <artifactId>mybatis-spring-boot-starter-test</artifactId>
+                <version>${mybatis-spring-boot.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <!-- PageHelper Spring Boot Starter -->
+            <dependency>
+                <groupId>com.github.pagehelper</groupId>
+                <artifactId>pagehelper-spring-boot-starter</artifactId>
+                <version>${pagehelper.version}</version>
+            </dependency>
+
+            <!-- JJWT -->
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt</artifactId>
+                <version>${jjwt.version}</version>
+            </dependency>
+
+            <!-- JAXB API -->
+            <dependency>
+                <groupId>javax.xml.bind</groupId>
+                <artifactId>jaxb-api</artifactId>
+                <version>${jaxb.version}</version>
+            </dependency>
+
+            <!-- JAXB Runtime（可选，但通常与 api 一起使用） -->
+            <dependency>
+                <groupId>org.glassfish.jaxb</groupId>
+                <artifactId>jaxb-runtime</artifactId>
+                <version>${jaxb.version}</version>
+            </dependency>
+
+            <!-- MyBatis 核心库（如果子模块直接引用了 org.mybatis:mybatis） -->
+            <dependency>
+                <groupId>org.mybatis</groupId>
+                <artifactId>mybatis</artifactId>
+                <version>${mybatis.version}</version>
+            </dependency>
+
+            <!-- 注意：以下依赖版本已由 spring-boot-dependencies 管理，无需重复声明 -->
+            <!-- mysql-connector-j, logback-classic, lombok, jackson 等 -->
+        </dependencies>
+    </dependencyManagement>
+
+    <modules>
+        <module>../smart-workshop-pojo</module>
+        <module>../smart-workshop-common</module>
+        <module>../smart-workshop-production</module>
+        <module>../smart-workshop-ai</module>
+        <module>../smart-workshop-server</module>
+    </modules>
+
+</project>

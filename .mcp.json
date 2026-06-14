@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "draw-uml": {
+      "command": "npx",
+      "args": ["-y", "draw-uml-mcp"]
+    }
+  }
+}

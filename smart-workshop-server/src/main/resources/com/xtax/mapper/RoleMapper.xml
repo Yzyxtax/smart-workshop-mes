@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xtax.mapper.RoleMapper">
+    <!-- 条件分页查询角色列表 -->
+    <select id="getAllRole" resultType="com.xtax.entity.Role">
+        select * from role
+        <where>
+            <if test="roleName != null and roleName != ''">
+                role_name like CONCAT('%',#{roleName},'%')
+            </if>
+        </where>
+        order by updated_at desc
+        <if test="page != null and pageSize != null and page > 0 and pageSize > 0">
+            LIMIT #{pageSize} OFFSET #{(page - 1) * pageSize}
+        </if>
+    </select>
+
+    <!-- 统计角色总数 -->
+    <select id="countRole" resultType="java.lang.Long">
+        select count(*) from role
+        <where>
+            <if test="roleName != null and roleName != ''">
+                role_name like CONCAT('%',#{roleName},'%')
+            </if>
+        </where>
+    </select>
+
+    <!-- 根据ID查询角色详情，包含权限数量 -->
+    <resultMap id="roleVOMap" type="com.xtax.vo.RoleVO">
+        <id property="id" column="id"/>
+        <result property="roleCode" column="role_code"/>
+        <result property="roleName" column="role_name"/>
+        <result property="description" column="description"/>
+        <result property="permissionCount" column="permission_count"/>
+    </resultMap>
+    <select id="getRoleById" resultMap="roleVOMap">
+        SELECT r.*, COUNT(rp.id) as permission_count
+        FROM role r
+        LEFT JOIN role_permission rp ON r.id = rp.role_id
+        WHERE r.id = #{id}
+        GROUP BY r.id
+    </select>
+
+    <!-- 添加角色 -->
+    <insert id="addRole">
+        insert into role(role_code, role_name, description, created_at, updated_at)
+        values (#{roleCode}, #{roleName}, #{description}, now(), now())
+    </insert>
+
+    <!-- 更新角色 -->
+    <update id="updateRole">
+        update role
+        <set>
+            <if test="roleCode != null and roleCode != ''">role_code = #{roleCode},</if>
+            <if test="roleName != null and roleName != ''">role_name = #{roleName},</if>
+            <if test="description != null">description = #{description},</if>
+            updated_at = now()
+        </set>
+        where id = #{id}
+    </update>
+
+    <!-- 批量删除角色 -->
+    <delete id="deleteRoles">
+        delete from role where id in
+        <foreach collection="list" item="id" separator="," open="(" close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <!-- 根据角色编码查询角色 -->
+    <select id="getRoleByCode" resultType="com.xtax.entity.Role">
+        select * from role where role_code = #{roleCode}
+    </select>
+</mapper>

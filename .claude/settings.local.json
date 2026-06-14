@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -E \"\\\\.jar$|classes|dependency\")",
+      "Bash(ls -la \"C:/Users/86182/AppData/Local/Temp/cp_2wk0tfolakn1w9xyes2w02hpo.argfile\" 2>/dev/null)",
+      "Read(//c/Users/86182/AppData/Local/Temp/**)",
+      "Bash(find \"C:/Users/86182/AppData/Local/Temp/\" -name \"cp_*.argfile\" -mmin -30 2>/dev/null | head -5)",
+      "Bash('C:\\\\Users\\\\86182\\\\.trae-cn\\\\extensions\\\\redhat.java-1.54.0-win32-x64\\\\jre\\\\21.0.10-win32-x86_64\\\\bin\\\\java.exe' '@C:\\\\Users\\\\86182\\\\AppData\\\\Local\\\\Temp\\\\cp_2wk0tfolakn1w9xyes2w02hpo.argfile' 'com.xtax.SmartWorkshopApplication' --debug)",
+      "Bash(\"C:/Users/86182/.trae-cn/extensions/redhat.java-1.54.0-win32-x64/jre/21.0.10-win32-x86_64/bin/java.exe\" \"@C:/Users/86182/AppData/Local/Temp/cp_2wk0tfolakn1w9xyes2w02hpo.argfile\" com.xtax.SmartWorkshopApplication --debug)",
+      "Bash(\"C:/Users/86182/.trae-cn/extensions/redhat.java-1.54.0-win32-x64/jre/21.0.10-win32-x86_64/bin/java.exe\" \"@C:/Users/86182/AppData/Local/Temp/cp_2wk0tfolakn1w9xyes2w02hpo.argfile\" com.xtax.SmartWorkshopApplication)"
+    ]
+  }
+}

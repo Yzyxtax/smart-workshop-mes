@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xtax.mapper.teamMapper">
+    <!--  根据编号查询班组信息  -->
+    <select id="getTeamByNo" resultType="com.xtax.entity.WorkTeam">
+        SELECT
+            wt.team_no,
+            wt.team_name,
+            wt.team_location,
+            pl.line_name,
+            u.name AS team_leader,
+            (SELECT COUNT(*) FROM users WHERE team_no = wt.team_no) AS team_member_num
+        FROM work_teams wt
+                 LEFT JOIN users u ON u.team_no = wt.team_no AND u.position = '班组长'
+                 LEFT JOIN production_lines pl ON pl.line_no = wt.line_no
+        WHERE wt.team_no = #{teamNo}
+    </select>
+    <!--  添加/修改班组成员信息  -->
+    <update id="setTeamMember">
+        UPDATE users
+        SET team_no = #{teamNo}
+        WHERE username in
+        <foreach item="item" index="index" collection="userName" separator="," open="(" close=")">
+            #{item}
+        </foreach>
+        or username = #{teamLeader}
+    </update>
+    <!--  修改班组信息  -->
+    <update id="updateTeam">
+        update work_teams
+        set team_no = #{team.teamNo},
+            team_name = #{team.teamName},
+            team_location = #{team.teamLocation}
+        where team_no = #{teamCode}
+    </update>
+    <!--  删除班组成员信息  -->
+    <update id="deleteTeamMember">
+        update users
+        set team_no = null
+        where team_no = #{teamNo}
+    </update>
+    <!--  查询班组矩阵信息  -->
+    <resultMap id="matrix" type="com.xtax.vo.MatrixDataVO">
+        <id property="username" column="username"/>
+        <result property="name" column="name"/>
+        <collection property="choices" ofType="com.xtax.vo.MatrixDataVO$ProcessChoice">
+            <result property="processName" column="process_name"/>
+            <result property="choose" column="choose"/>
+        </collection>
+    </resultMap>
+    <select id="getMatrixData" resultMap="matrix">
+        select username, name, process_name, choose from skills
+        where team_no = #{teamCode}
+        order by username, name
+    </select>
+    <!--  保存班组矩阵信息  -->
+    <update id="saveMatrixData">
+        UPDATE skills s1,
+            (SELECT id FROM skills
+             WHERE username = #{username}
+               AND process_name = #{processName}
+               AND team_no = #{teamCode}) s2
+        SET s1.choose = TRUE
+        WHERE s1.id = s2.id;
+    </update>
+    <!--  为技能表添加班组数据  -->
+    <update id="setTeamMemberSkill">
+        UPDATE skills
+        SET team_no = #{teamNo}
+        WHERE username in
+        <foreach item="item" index="index" collection="userName" separator="," open="(" close=")">
+            #{item}
+        </foreach>
+        or username = #{teamLeader}
+    </update>
+    <!--  为技能表清空班组数据  -->
+    <update id="deleteTeamMemberSkill">
+        UPDATE skills
+        SET team_no = null
+        WHERE team_no = #{teamNo}
+    </update>
+</mapper>

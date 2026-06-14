@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xtax.mapper.userMapper">
+<!--    条件分页查询用户信息-->
+    <select id="getAllUser" resultType="com.xtax.entity.User">
+        select * from users
+        <where>
+            <if test="name != null and name != ''">
+                name like CONCAT('%',#{name},'%')
+            </if>
+            <if test="position != null and position != ''">
+                and position like CONCAT('%',#{position},'%')
+            </if>
+            <if test="begin != null and end != null ">
+                and created_at between #{begin} and #{end}
+            </if>
+        </where>
+        order by updated_at desc
+    </select>
+<!--    批量删除用户信息-->
+    <delete id="deleteUsers">
+        delete from users where id in
+        <foreach collection="ids" item="id" separator="," open="(" close=")">
+            #{id}
+        </foreach>
+    </delete>
+<!--    修改用户信息-->
+    <update id="updateUser">
+        update users 
+        <set> 
+            <if test="userName != null and userName != ''">username = #{userName},</if>
+            <if test="name != null and name != ''">name = #{name},</if>
+            <if test="position != null and position != ''">position = #{position},</if>
+            <if test="password != null and password != ''">password = #{password},</if>
+            updated_at = now()
+        </set>
+        where id = #{id}
+    </update>
+<!--  根据id查询用户信息  -->
+    <resultMap id="user" type="com.xtax.vo.UserVO">
+        <id property="id" column="id"/>
+        <result property="userName" column="username"/>
+        <result property="password" column="password"/>
+        <result property="name" column="name"/>
+        <result property="position" column="position"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <collection property="processName" ofType="string">
+            <result column="process_name"/>
+        </collection>
+    </resultMap>
+    <select id="getUserById" resultMap="user">
+        SELECT u.*, s.process_name
+        FROM users u
+                 LEFT JOIN skills s ON u.username = s.username
+        WHERE u.id = #{id}
+        ORDER BY u.id, s.process_name
+    </select>
+<!--  添加用户信息  -->
+    <insert id="addUser">
+        insert into users(username, name, position, updated_at)
+        values (#{userName}, #{name}, #{position}, now())
+    </insert>
+<!--  添加技能信息  -->
+    <insert id="addSkill">
+        insert into skills(username, name, process_name)
+        values (#{username}, #{name}, #{skill})
+    </insert>
+<!--  删除技能信息  -->
+    <delete id="deleteSkill">
+        delete from skills where username = #{username}
+    </delete>
+</mapper>

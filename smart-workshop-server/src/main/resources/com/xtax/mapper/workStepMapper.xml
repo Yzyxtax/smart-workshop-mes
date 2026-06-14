@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xtax.mapper.workStepMapper">
+    <!-- Step 基本信息（不包含工艺名称） -->
+    <select id="getWorkStep" resultMap="step">
+        SELECT
+        ws.id,
+        ws.name,
+        ws.equipment_id,
+        ws.function_id,
+        ei.name AS equipmentName,
+        ei.model AS equipmentModel,
+        ef.function_description,
+        ws.description
+        FROM work_steps ws
+        JOIN equipment_info ei ON ws.equipment_id = ei.id
+        JOIN equipment_functions ef ON ws.function_id = ef.id
+        <where>
+            <!-- 工步名称 -->
+            <if test="stepName != null and stepName != ''">
+                ws.name LIKE CONCAT('%', #{stepName}, '%')
+            </if>
+
+            <!-- 设备名称 -->
+            <if test="equipmentName != null and equipmentName != ''">
+                AND ei.name LIKE CONCAT('%', #{equipmentName}, '%')
+            </if>
+
+            <!-- 工序名称（通过 process_steps + processes 子查询过滤） -->
+            <if test="processName != null and processName != ''">
+                AND ws.id IN (
+                SELECT ps.work_step_id
+                FROM process_steps ps
+                JOIN processes p ON ps.process_id = p.id
+                WHERE p.process_name LIKE CONCAT('%', #{processName}, '%')
+                )
+            </if>
+        </where>
+        ORDER BY ws.id
+    </select>
+
+    <!-- 查询每个工步对应的工艺 -->
+    <select id="getProcessNamesByStepId" resultType="string">
+        SELECT p.process_name
+        FROM process_steps ps
+                 JOIN processes p ON ps.process_id = p.id
+        WHERE ps.work_step_id = #{stepId}
+    </select>
+
+    <!-- 关联关系 -->
+    <resultMap id="step" type="com.xtax.entity.WorkStep">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="equipmentName" column="equipmentName"/>
+        <result property="equipmentModel" column="equipmentModel"/>
+        <result property="functionDescription" column="function_description"/>
+        <result property="description" column="description"/>
+        <collection property="processName"
+                    ofType="string"
+                    select="getProcessNamesByStepId"
+                    column="id"/>
+    </resultMap>
+
+    <!-- 新增工步 -->
+    <insert id="addWorkStep" useGeneratedKeys="true" keyColumn="id" keyProperty="id">
+        insert into work_steps (name, equipment_id, function_id, description)
+        values (#{name}, #{equipmentId}, #{functionId}, #{description})
+    </insert>
+
+    <!-- 更新工步信息 -->
+    <update id="updateWorkStep">
+        update work_steps
+        <set>
+            <if test="name != null">
+                name = #{name},
+            </if>
+            <if test="equipmentId != null">
+                equipment_id = #{equipmentId},
+            </if>
+            <if test="functionId != null">
+                function_id = #{functionId},
+            </if>
+            <if test="description != null">
+                description = #{description},
+            </if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <!-- 删除工步信息 -->
+    <delete id="deleteWorkStep">
+        delete from work_steps where id in
+            <foreach item="item" collection="stepIds" separator="," open="(" close=")">
+                #{item}
+            </foreach>
+    </delete>
+
+    <!-- 查询所有工步信息 -->
+    <resultMap id="stepListAll" type="com.xtax.entity.WorkStep">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="equipmentId" column="equipment_id"/>
+        <result property="functionId" column="function_id"/>
+        <result property="description" column="description"/>
+        <collection property="processName"
+                    ofType="string"
+                    select="getProcessNamesByStepId"
+                    column="id"/>
+    </resultMap>
+    <select id="getAllWorkStep" resultMap="stepListAll">
+        select * from work_steps
+    </select>
+</mapper>

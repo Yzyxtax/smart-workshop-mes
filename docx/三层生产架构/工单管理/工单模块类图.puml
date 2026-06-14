@@ -1,0 +1,239 @@
+@startuml 工单模块类图
+
+' ============================================
+' MES 工单管理模块 — 类图
+' 版本: v1.2 | 日期: 2026-06-10
+' 变更: v1.2 — Order 层级联操作补全工单审计记录（Fix 13）
+' ============================================
+
+skinparam classAttributeIconSize 0
+skinparam backgroundColor #FEFEFE
+skinparam classBorderColor #333333
+skinparam classFontName Microsoft YaHei
+skinparam packageBorderColor #666666
+
+' ==================== 枚举 ====================
+
+enum StateEnum {
+    CREATED : 创建
+    RELEASED : 发布
+    RUNNING : 执行
+    PAUSED : 暂停
+    COMPLETED : 完成
+    TERMINATED : 作废
+    --
+    + next(ActionEnum) : StateEnum
+}
+
+enum ActionEnum {
+    PUBLISH : 发布
+    CANCEL_PUBLISH : 取消发布
+    PAUSE : 暂停
+    RESUME : 恢复执行
+    START_WORK : 开始作业
+    FINISH_WORK : 完成作业
+    TERMINATE : 作废
+}
+
+' ==================== 领域实体 ====================
+
+class WorkOrder {
+    - workOrderNo : String
+    - orderNo : String
+    - processId : Integer
+    - userId : Integer
+    - isCritical : Boolean
+    - plannedQuantity : Integer
+    - actualQuantity : Integer
+    - scrapQuantity : Integer
+    - status : StateEnum
+    - startTime : LocalDateTime
+    - endTime : LocalDateTime
+    - actualStartTime : LocalDateTime
+    - actualEndTime : LocalDateTime
+    - remark : String
+    - createTime : LocalDateTime
+    - updateTime : LocalDateTime
+}
+
+class ProductionOrder {
+    - orderNo : String
+    - planNo : String
+    - lineNo : String
+    - orderName : String
+    - quantity : Integer
+    - status : StateEnum
+}
+
+' ==================== DTO ====================
+
+class WorkOrderDTO {
+    - orderNo : String
+    - processId : Integer
+    - userId : Integer
+    - isCritical : Boolean
+    - plannedQuantity : Integer
+    - startTime : String
+    - endTime : String
+    - remark : String
+}
+
+class WorkOrderUpdateDTO {
+    - userId : Integer
+    - processId : Integer
+    - isCritical : Boolean
+    - plannedQuantity : Integer
+    - actualQuantity : Integer
+    - scrapQuantity : Integer
+    - startTime : String
+    - endTime : String
+    - remark : String
+}
+
+' ==================== 状态机 ====================
+
+class workOrderStateMachine {
+    - STATE_ACTION_MAP : Map~StateEnum, Set~ActionEnum~~
+    --
+    + check(currentState, action) : void
+    + isAllowed(currentState, action) : boolean
+}
+
+' ==================== 策略 ====================
+
+interface PermissionPolicy {
+    + check(userId, action) : void
+}
+
+class workOrderPermissionPolicy {
+    - userMapper : userMapper
+    --
+    + check(userId, action) : void
+}
+
+' ==================== 状态上下文 ====================
+
+class StateContext {
+    - bizNo : String
+    - action : ActionEnum
+    - userId : Integer
+    --
+    + getBizNo() : String
+    + getAction() : ActionEnum
+    + getUserId() : Integer
+}
+
+' ==================== 服务层 ====================
+
+interface workOrderService {
+    + getAllWorkOrders() : List~WorkOrder~
+    + getWorkOrderByNo(workOrderNo) : WorkOrder
+    + getWorkOrderByOrder(orderNo) : List~WorkOrder~
+    + getWorkOrderByUser(userId) : List~WorkOrder~
+    + getWorkOrderByProcess(processId) : List~WorkOrder~
+    + addWorkOrder(dto) : WorkOrder
+    + updateWorkOrder(workOrderNo, dto) : int
+    + deleteWorkOrder(workOrderNo) : int
+}
+
+class workOrderServiceImpl {
+    - workOrderMapper : workOrderMapper
+    - orderMapper : orderMapper
+    - processMapper : processMapper
+    - userMapper : userMapper
+}
+
+class workOrderStateServiceImpl {
+    - workOrderStateMachine : workOrderStateMachine
+    - permissionPolicy : workOrderPermissionPolicy
+    - auditService : AuditService
+    - workOrderMapper : workOrderMapper
+    - orderMapper : orderMapper
+    - planStateService : planStateServiceImpl
+    - userMapper : userMapper
+    --
+    + handle(workOrderNo, action, userId) : void
+    + handleLinkage(workOrder, action) : void
+}
+
+' ==================== Mapper ====================
+
+class workOrderMapper {
+    + getAllWorkOrders() : List~WorkOrder~
+    + getWorkOrderByNo(workOrderNo) : WorkOrder
+    + getWorkOrderByOrder(orderNo) : List~WorkOrder~
+    + getWorkOrderByUser(userId) : List~WorkOrder~
+    + getWorkOrderByProcess(processId) : List~WorkOrder~
+    + addWorkOrder(workOrder) : int
+    + updateWorkOrder(workOrder) : int
+    + updateWorkOrderStatus(workOrderNo, status) : int
+    + updateWorkOrderStatusAndStartTime(workOrderNo, status) : int
+    + updateWorkOrderStatusAndEndTime(workOrderNo, status) : int
+    + deleteWorkOrderByNo(workOrderNo) : int
+    + countByOrderProcessUser(orderNo, processId, userId) : int
+    + getMaxSeqByOrderAndProcess(orderNo, processId) : int
+    + getCriticalWorkOrdersByOrder(orderNo) : List~WorkOrder~
+    + getWorkOrdersByOrderNo(orderNo) : List~WorkOrder~
+}
+
+' ==================== Controller ====================
+
+class workOrderController {
+    - workOrderServiceImpl : workOrderServiceImpl
+    - workOrderStateServiceImpl : workOrderStateServiceImpl
+    - {static} USER_ALLOWED_ACTIONS : Set~ActionEnum~ <<白名单: START_WORK/FINISH_WORK/PAUSE/RESUME/TERMINATE>>
+    --
+    + getAllWorkOrders() : Result
+    + getWorkOrderByNo(workOrderNo) : Result
+    + getWorkOrderByOrder(orderNo) : Result
+    + getWorkOrderByUser(userId) : Result
+    + getWorkOrderByProcess(processId) : Result
+    + addWorkOrder(dto) : Result
+    + updateWorkOrder(workOrderNo, dto) : Result
+    + deleteWorkOrder(workOrderNo) : Result
+    + handleAction(workOrderNo, action, request) : Result
+    - extractUserIdFromToken(request) : Integer
+}
+
+' ==================== 关系 ====================
+
+WorkOrder --> StateEnum : status
+WorkOrder "N" -- "1" ProductionOrder : orderNo >
+
+WorkOrderDTO --> WorkOrder : 映射为
+WorkOrderUpdateDTO --> WorkOrder : 状态感知更新
+
+workOrderController --> workOrderServiceImpl : CRUD 委托
+workOrderController --> workOrderStateServiceImpl : 状态变更委托
+
+workOrderServiceImpl ..|> workOrderService
+workOrderServiceImpl --> workOrderMapper : 数据访问
+
+workOrderStateServiceImpl --> workOrderStateMachine : 状态校验
+workOrderStateServiceImpl --> workOrderPermissionPolicy : 权限校验
+workOrderStateServiceImpl --> StateContext : 上下文
+workOrderStateServiceImpl --> workOrderMapper : 持久化
+
+note right of workOrderStateServiceImpl
+  v1.2: 无论从 WorkOrder 自身直接操作
+  还是从 Order 层级联触发，工单
+  状态变更均会通过 AuditService
+  记录审计（含 planStateServiceImpl
+  和 orderStateServiceImpl 中的级联方法）
+end note
+
+workOrderPermissionPolicy ..|> PermissionPolicy
+
+workOrderStateMachine --> StateEnum : 状态规则
+workOrderStateMachine --> ActionEnum : 动作规则
+
+' ==================== 图例 ====================
+
+legend right
+  |= 颜色 |= 含义 |
+  | <#E1F5FE> | 待新增/改造 |
+  | <#FFF9C4> | 已存在, 需扩展 |
+  | <#C8E6C9> | 已存在, 无需修改 |
+endlegend
+
+@enduml

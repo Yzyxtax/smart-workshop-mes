@@ -1,0 +1,711 @@
+@startuml 计划管理模块类图
+
+' ============================================================
+' 计划管理模块 — 完整类图（含 ORDER / WORK_ORDER 联动子系统）
+' 更新日期：2026-06-10
+' 版本: v1.2
+' 变更说明（v1.2）：
+'   1. syncPlanStatusFromOrders PAUSED 判定排除 CREATED/RELEASED 订单（Fix 11）
+'   2. syncPlanStatusFromOrders COMPLETED 判定纳入 TERMINATED 订单（Fix 12）
+' 变更说明（v1.1）：
+'   1. planStateServiceImpl.handleLinkage 补全 PAUSE/RESUME/CANCEL_PUBLISH/TERMINATE 级联联动
+'   2. planStateServiceImpl 新增 workOrderMapper 依赖（级联操纵工单状态）
+'   3. planMapper 新增 updatePlanCompletedNum（计划完成时汇总订单产量）
+'   4. planStateService / orderStateService 接口 handleLinkage 签名新增 userId 参数
+'   5. orderStateServiceImpl.handleLinkage 补全向下联动（生成/暂停/恢复/作废工单）
+'   6. orderStateServiceImpl 新增依赖 processFlowMapper / processMapper / userMapper / lineMapper / workOrderStateService
+'   7. orderMapper 新增 updateOrderStatusAndStartTime / updateOrderStatusAndEndTime / updateOrderQuantity / insertWorkOrder / getWorkOrdersByOrderNo / updateWorkOrderStatus
+'   8. GatePolicy 新增 checkOrder(StateContext, String, String) 方法重载（Order 级门禁）
+'   9. 新增 WorkOrder 状态子系统（workOrderStateMachine / workOrderPermissionPolicy / workOrderStateService / workOrderStateServiceImpl / workOrderMapper）
+'   10. 完整三层联动链：Plan ↔ Order ↔ WorkOrder（下发 + 级联 + 上传）
+' ============================================================
+
+skinparam classAttributeIconSize 0
+skinparam monochrome true
+
+' ======================== 枚举类 ========================
+package "枚举类" <<Rectangle>> {
+    enum ActionEnum {
+        +PUBLISH: 发布
+        +CANCEL_PUBLISH: 取消发布
+        +PAUSE: 暂停
+        +RESUME: 恢复执行
+        +START_WORK: 开始作业
+        +FINISH_WORK: 完成作业
+        +TERMINATE: 作废
+        -code: String
+        -desc: String
+    }
+
+    enum StateEnum {
+        +CREATED: 创建
+        +RELEASED: 发布
+        +RUNNING: 执行
+        +PAUSED: 暂停
+        +COMPLETED: 完成
+        +TERMINATED: 作废
+        -code: String
+        -desc: String
+        +next(ActionEnum): StateEnum
+    }
+}
+
+' ======================== 实体类 ========================
+package "实体类 (pojo)" <<Rectangle>> {
+    class Plan {
+        -planNo: String
+        -planName: String
+        -bomId: Integer
+        -planNum: Integer
+        -completedNum: Integer
+        -startTime: LocalDate
+        -endTime: LocalDate
+        -priority: String
+        -status: StateEnum
+        -creatorId: Integer
+        -publisherId: Integer
+        -createTime: LocalDateTime
+        -updateTime: LocalDateTime
+        -remark: String
+    }
+
+    class ProductionOrder {
+        -orderNo: String
+        -planNo: String
+        -lineNo: String
+        -orderName: String
+        -quantity: Integer
+        -quantityProduced: Integer
+        -qualifiedProducts: Integer
+        -defectiveProducts: Integer
+        -status: StateEnum
+        -actualStartTime: LocalDateTime
+        -actualEndTime: LocalDateTime
+        -startTime: LocalDateTime
+        -endTime: LocalDateTime
+        -createTime: LocalDateTime
+        -updateTime: LocalDateTime
+    }
+
+    class WorkOrder {
+        -workOrderNo: String
+        -orderNo: String
+        -processId: Integer
+        -userId: Integer
+        -isCritical: Boolean
+        -plannedQuantity: Integer
+        -actualQuantity: Integer
+        -scrapQuantity: Integer
+        -status: StateEnum
+        -remark: String
+        -startTime: LocalDateTime
+        -endTime: LocalDateTime
+        -actualStartTime: LocalDateTime
+        -actualEndTime: LocalDateTime
+        -createTime: LocalDateTime
+        -updateTime: LocalDateTime
+    }
+
+    class User {
+        ' 用户实体：id, userName, password, name, position
+    }
+
+    class UserVO {
+        ' 用户视图对象：继承 User，扩展 processName 列表
+    }
+}
+
+' ======================== VO 类 ========================
+package "VO 类" <<Rectangle>> {
+    class Result {
+        -code: Integer
+        -message: String
+        -data: Object
+        +success(Object): Result
+        +success(): Result
+        +error(String): Result
+        +error(Integer, String): Result
+    }
+}
+
+' ======================== 异常类 ========================
+package "异常类" <<Rectangle>> {
+    class BusinessException {
+        -code: Integer
+        +getCode(): Integer
+    }
+    BusinessException --|> RuntimeException
+
+    class SecurityException {
+        ' java.lang.SecurityException
+    }
+    SecurityException --|> RuntimeException
+}
+
+' ======================== 工具类 ========================
+package "工具类 (common)" <<Rectangle>> {
+    class JwtUtils {
+        -SECRET_KEY: String
+        -EXPIRATION_TIME: long
+        +generateToken(Map): String
+        +parseToken(String): Map
+    }
+}
+
+' ======================== 状态领域（三层共享） ========================
+package "状态领域 (production)" <<Rectangle>> {
+    class StateContext {
+        -bizNo: String
+        -action: ActionEnum
+        -userId: Integer
+        +StateContext(bizNo, action, userId)
+        +equals(Object): boolean
+        +hashCode(): int
+        +toString(): String
+    }
+
+    class planStateMachine {
+        -STATE_ACTION_MAP: Map<StateEnum, Set<ActionEnum>>
+        +check(StateEnum, ActionEnum): void
+        +isAllowed(StateEnum, ActionEnum): boolean
+    }
+    note right of planStateMachine
+        CREATED → PUBLISH
+        RELEASED → CANCEL_PUBLISH, TERMINATE
+        RUNNING → PAUSE
+        PAUSED → RESUME
+        COMPLETED → (none)
+        TERMINATED → (none)
+    end note
+
+    class orderStateMachine {
+        -STATE_ACTION_MAP: Map<StateEnum, Set<ActionEnum>>
+        +check(StateEnum, ActionEnum): void
+        +isAllowed(StateEnum, ActionEnum): boolean
+    }
+    note right of orderStateMachine
+        CREATED → PUBLISH
+        RELEASED → CANCEL_PUBLISH, START_WORK, TERMINATE
+        RUNNING → PAUSE, FINISH_WORK
+        PAUSED → RESUME
+        COMPLETED → (none)
+        TERMINATED → (none)
+    end note
+
+    class workOrderStateMachine {
+        -STATE_ACTION_MAP: Map<StateEnum, Set<ActionEnum>>
+        +check(StateEnum, ActionEnum): void
+        +isAllowed(StateEnum, ActionEnum): boolean
+    }
+    note right of workOrderStateMachine
+        CREATED → PUBLISH
+        RELEASED → CANCEL_PUBLISH, START_WORK, TERMINATE
+        RUNNING → PAUSE, FINISH_WORK
+        PAUSED → RESUME, TERMINATE
+        COMPLETED → (none)
+        TERMINATED → (none)
+    end note
+}
+
+' ======================== 策略接口 ========================
+package "策略接口 (production)" <<Rectangle>> {
+    interface PermissionPolicy {
+        +check(userId: Integer, action: ActionEnum): void
+    }
+
+    interface GatePolicyInterface {
+        +check(context: StateContext): void
+        +checkOrder(context: StateContext, planNo: String, lineNo: String): void
+    }
+}
+
+' ======================== 策略实现 ========================
+package "策略实现 (server)" <<Rectangle>> {
+    class planPermissionPolicy {
+        -userMapper: userMapper
+        +check(userId: Integer, action: ActionEnum): void
+    }
+    planPermissionPolicy ..|> PermissionPolicy
+    note right of planPermissionPolicy
+        PUBLISH / CANCEL_PUBLISH / PAUSE
+        RESUME / TERMINATE
+        → 需"生产主管"角色
+        START_WORK / FINISH_WORK
+        → 计划层禁止
+    end note
+
+    class orderPermissionPolicy {
+        -userMapper: userMapper
+        +check(userId: Integer, action: ActionEnum): void
+    }
+    orderPermissionPolicy ..|> PermissionPolicy
+    note right of orderPermissionPolicy
+        PUBLISH / CANCEL_PUBLISH
+        → 系统联动，不校验
+        PAUSE / RESUME / TERMINATE
+        → 需"生产主管"角色
+        START_WORK / FINISH_WORK
+        → 事实驱动，不校验
+    end note
+
+    class workOrderPermissionPolicy {
+        -userMapper: userMapper
+        +check(userId: Integer, action: ActionEnum): void
+    }
+    workOrderPermissionPolicy ..|> PermissionPolicy
+    note right of workOrderPermissionPolicy
+        PUBLISH / CANCEL_PUBLISH
+        → 系统联动，不校验
+        START_WORK / FINISH_WORK
+        → 需本工单派工人员
+        PAUSE / RESUME
+        → 本工单人员或主管
+        TERMINATE
+        → 需"生产主管"角色
+    end note
+
+    class GatePolicy {
+        -planMapper: planMapper
+        -processFlowMapper: processFlowMapper
+        -lineMapper: lineMapper
+        -processMapper: processMapper
+        -userMapper: userMapper
+        +check(context: StateContext): void
+        +checkOrder(context: StateContext, planNo: String, lineNo: String): void
+    }
+    GatePolicy ..|> GatePolicyInterface
+    note right of GatePolicy
+        check(): Plan 级门禁
+          1. Process Gate: 工艺流程存在性
+          2. Capacity Gate: 产线可用性
+          3. Skill Gate: 工序人员技能
+        checkOrder(): Order 级门禁
+          1. Capacity Gate: 产线存在且空闲
+          2. Process Gate: 产线绑定有效工艺流程
+          3. Skill Gate: 工序人员技能
+    end note
+}
+
+' ======================== Mapper 层 ========================
+package "Mapper 层" <<Rectangle>> {
+    interface planMapper {
+        +getAllPlan(): List<Plan>
+        +addPlan(Plan): int
+        +deletePlan(String): int
+        +updatePlan(Plan, String): int
+        +getPlanByNo(String): Plan
+        +updatePlanStatus(String, StateEnum): void
+        +updatePlanCompletedNum(String, Integer): void
+    }
+
+    interface orderMapper {
+        +getOrderByPlan(String): List<ProductionOrder>
+        +getAllOrder(): List<ProductionOrder>
+        +getOrderByNo(String): ProductionOrder
+        +addOrder(ProductionOrder): int
+        +updateOrderStatus(String, StateEnum): void
+        +updateOrderStatusAndStartTime(String, StateEnum): void
+        +updateOrderStatusAndEndTime(String, StateEnum): void
+        +updateOrderQuantity(String, Integer, Integer, Integer): void
+        +insertWorkOrder(WorkOrder): int
+        +getWorkOrdersByOrderNo(String): List<WorkOrder>
+        +updateWorkOrderStatus(String, StateEnum): int
+    }
+
+    interface workOrderMapper {
+        +getAllWorkOrders(): List<WorkOrder>
+        +getWorkOrderByNo(String): WorkOrder
+        +getWorkOrderByOrder(String): List<WorkOrder>
+        +getWorkOrderByUser(Integer): List<WorkOrder>
+        +getWorkOrderByProcess(Integer): List<WorkOrder>
+        +addWorkOrder(WorkOrder): int
+        +updateWorkOrder(WorkOrder): int
+        +updateWorkOrderStatus(String, StateEnum): int
+        +updateWorkOrderStatusAndStartTime(String, StateEnum): int
+        +updateWorkOrderStatusAndEndTime(String, StateEnum): int
+        +deleteWorkOrderByNo(String): int
+        +countByOrderProcessUser(String, Integer, Integer): int
+        +getMaxSeqByOrderAndProcess(String, Integer): int
+        +getCriticalWorkOrdersByOrder(String): List<WorkOrder>
+        +getWorkOrdersByOrderNo(String): List<WorkOrder>
+    }
+
+    interface userMapper {
+        +getUserById(Integer): UserVO
+        +hasUserWithSkill(String): boolean
+        +findUserIdsBySkill(String): List<Integer>
+    }
+
+    interface lineMapper {
+        +isLineExist(Integer): boolean
+        +getAvailableLineNoByFlowId(Integer): String
+        +getLine(String): ProductionLine
+    }
+
+    interface processFlowMapper {
+        +isFlowExist(Integer): boolean
+        +getProcessFlowIdList(Integer): List<Integer>
+        +getProcessIdsByFlowId(Integer): List<Integer>
+    }
+
+    interface processMapper {
+        +getProcessById(Integer): String
+    }
+
+    interface auditMapper {
+        +addAudit(...): void
+        +getLastPauseRecord(String, String): StateEnum
+    }
+}
+
+' ======================== 服务接口 ========================
+package "服务接口" <<Rectangle>> {
+    interface planService {
+        +getAllPlan(): List<Plan>
+        +addPlan(Plan): int
+        +deletePlan(String): int
+        +updatePlan(Plan, String): int
+    }
+
+    interface planStateService {
+        +handle(planNo: String, action: ActionEnum, userId: Integer): void
+        +handleLinkage(Plan, ActionEnum, Integer userId): void
+    }
+
+    interface orderService {
+        +getOrderByPlan(String): List<ProductionOrder>
+        +getAllOrder(): Object
+    }
+
+    interface orderStateService {
+        +handle(orderNo: String, action: ActionEnum, userId: Integer): void
+        +handleLinkage(ProductionOrder, ActionEnum, Integer userId): void
+    }
+
+    interface workOrderStateService {
+        +handle(workOrderNo: String, action: ActionEnum, userId: Integer): void
+        +handleLinkage(WorkOrder, ActionEnum, Integer userId): void
+    }
+}
+
+' ======================== 服务实现 ========================
+package "服务实现" <<Rectangle>> {
+    class planServiceImpl {
+        -planMapper: planMapper
+        +getAllPlan(): List<Plan>
+        +addPlan(Plan): int
+        +deletePlan(String): int
+        +updatePlan(Plan, String): int
+    }
+    planServiceImpl ..|> planService
+    note right of planServiceImpl
+        deletePlan: CREATED 可删，其余抛异常
+        updatePlan: CREATED 全量可改
+        RELEASED 仅部分字段可改
+        其余状态禁止修改
+    end note
+
+    class planStateServiceImpl {
+        -planStateMachine: planStateMachine
+        -permissionPolicy: planPermissionPolicy
+        -gatePolicy: GatePolicy
+        -auditService: AuditService
+        -planMapper: planMapper
+        -orderMapper: orderMapper
+        -processFlowMapper: processFlowMapper
+        -lineMapper: lineMapper
+        -workOrderMapper: workOrderMapper
+        +handle(planNo: String, action: ActionEnum, userId: Integer): void
+        +handleLinkage(Plan, ActionEnum, Integer userId): void
+        +syncPlanStatusFromOrders(planNo: String, userId: Integer): void
+        -findLineByProcessFlowId(Integer): String
+    }
+    planStateServiceImpl ..|> planStateService
+    note right of planStateServiceImpl
+        handle(): 权限→状态机→门禁→
+        状态更新→审计→联动
+        handleLinkage():
+          PUBLISH → 按产线拆分生成 Order
+          PAUSE → 级联暂停 Order+WorkOrder
+          RESUME → 级联恢复 Order+WorkOrder
+          CANCEL_PUBLISH → 级联作废 Order+WorkOrder
+          TERMINATE → 级联终止 Order+WorkOrder
+        syncPlanStatusFromOrders():
+          Order→Plan 上行聚合
+          任一Order RUNNING → Plan RUNNING
+          已执行Order全终态且≥1个COMPLETED
+            → Plan COMPLETED（含TERMINATED）
+          已执行Order全终态/暂停且≥1个PAUSED
+            → Plan PAUSED（排除CREATED/RELEASED）
+          完成时汇总COMPLETED订单产量到completedNum
+    end note
+
+    class orderServiceImpl {
+        -orderMapper: orderMapper
+        +getOrderByPlan(String): List<ProductionOrder>
+        +getAllOrder(): Object
+    }
+    orderServiceImpl ..|> orderService
+
+    class orderStateServiceImpl {
+        -orderStateMachine: orderStateMachine
+        -permissionPolicy: orderPermissionPolicy
+        -gatePolicy: GatePolicy
+        -auditService: AuditService
+        -orderMapper: orderMapper
+        -planStateService: planStateServiceImpl
+        -processFlowMapper: processFlowMapper
+        -processMapper: processMapper
+        -userMapper: userMapper
+        -lineMapper: lineMapper
+        -workOrderStateService: workOrderStateService
+        +handle(orderNo: String, action: ActionEnum, userId: Integer): void
+        +handleLinkage(ProductionOrder, ActionEnum, Integer userId): void
+        -generateWorkOrders(ProductionOrder, Integer): void
+        -cancelWorkOrders(ProductionOrder, Integer): void
+        -terminateWorkOrders(ProductionOrder, Integer): void
+        -pauseWorkOrders(ProductionOrder, Integer): void
+        -resumeWorkOrders(ProductionOrder, Integer): void
+    }
+    orderStateServiceImpl ..|> orderStateService
+    note right of orderStateServiceImpl
+        handle(): 权限→状态机→门禁→
+        状态更新→审计→联动
+        handleLinkage():
+          向上: syncPlanStatusFromOrders
+          向下: PUBLISH → 生成+发布工单
+                CANCEL_PUBLISH → 作废工单
+                TERMINATE → 终止工单
+                PAUSE → 暂停工单
+                RESUME → 恢复工单
+    end note
+
+    class workOrderStateServiceImpl {
+        -workOrderStateMachine: workOrderStateMachine
+        -permissionPolicy: workOrderPermissionPolicy
+        -auditService: AuditService
+        -workOrderMapper: workOrderMapper
+        -orderMapper: orderMapper
+        -planStateService: planStateServiceImpl
+        -userMapper: userMapper
+        +handle(workOrderNo: String, action: ActionEnum, userId: Integer): void
+        +handleLinkage(WorkOrder, ActionEnum, Integer userId): void
+        -checkEmployeePermission(WorkOrder, ActionEnum, Integer): void
+    }
+    workOrderStateServiceImpl ..|> workOrderStateService
+    note right of workOrderStateServiceImpl
+        handle(): 权限→状态机→
+        员工归属校验→业务校验→
+        差异化持久化→审计→联动
+        handleLinkage():
+          仅关键工单触发向上联动
+          START_WORK → Order RUNNING
+          FINISH_WORK → Order COMPLETED
+          (汇总产量至 Order → Plan)
+          PAUSE/RESUME/TERMINATE
+          → 同步 Order 状态 → Plan
+    end note
+}
+
+' ======================== 审计服务 ========================
+package "审计服务" <<Rectangle>> {
+    class AuditService {
+        -auditMapper: auditMapper
+        +record(targetType: String, context: StateContext, fromStatus: StateEnum, toStatus: StateEnum): void
+        +getLastPauseRecord(String, String): StateEnum
+    }
+    note right of AuditService
+        targetType 支持:
+        PLAN / ORDER / WORK_ORDER
+    end note
+}
+
+' ======================== 控制器层 ========================
+package "控制器层" <<Rectangle>> {
+    class planController {
+        -planServiceImpl: planServiceImpl
+        -planStateServiceImpl: planStateServiceImpl
+        +getAllPlan(): Result
+        +addPlan(Plan): Result
+        +deletePlan(String): Result
+        +updatePlan(Plan, String): Result
+        +handleAction(String, ActionEnum, HttpServletRequest): Result
+        -extractUserIdFromToken(HttpServletRequest): Integer
+    }
+    note right of planController
+        handleAction: userId 从
+        JWT Token 解析，不信任
+        客户端传入参数
+        deletePlan / updatePlan:
+        BusinessException 捕获
+    end note
+
+    class orderController {
+        -orderServiceImpl: orderServiceImpl
+        -orderStateServiceImpl: orderStateServiceImpl
+        +getOrderByPlan(String): Result
+        +getAllOrder(): Result
+        +handleAction(String, ActionEnum, HttpServletRequest): Result
+        -extractUserIdFromToken(HttpServletRequest): Integer
+    }
+    note right of orderController
+        激活状态变更接口
+        userId 从 JWT Token 解析
+    end note
+
+    class workOrderController {
+        -workOrderServiceImpl: workOrderServiceImpl
+        -workOrderStateServiceImpl: workOrderStateServiceImpl
+        +getAllWorkOrders(): Result
+        +handleAction(String, ActionEnum, HttpServletRequest): Result
+        -extractUserIdFromToken(HttpServletRequest): Integer
+    }
+    note right of workOrderController
+        userId 从 JWT Token 解析
+        handleAction: 异常分层捕获
+    end note
+}
+
+' ============================================================
+'                        关系连线
+' ============================================================
+
+' ---- 实体与枚举 ----
+Plan --> StateEnum : uses
+ProductionOrder --> StateEnum : uses
+WorkOrder --> StateEnum : uses
+
+' ---- 状态机与枚举 ----
+planStateMachine --> StateEnum : uses
+planStateMachine --> ActionEnum : uses
+orderStateMachine --> StateEnum : uses
+orderStateMachine --> ActionEnum : uses
+workOrderStateMachine --> StateEnum : uses
+workOrderStateMachine --> ActionEnum : uses
+
+' ---- 状态上下文与枚举 ----
+StateContext --> ActionEnum : uses
+
+' ---- 控制器依赖 ----
+planController --> planServiceImpl : uses
+planController --> planStateServiceImpl : uses
+planController --> Result : returns
+planController --> Plan : uses
+planController --> ActionEnum : uses
+planController --> JwtUtils : uses
+planController ..> BusinessException : catches
+planController ..> SecurityException : catches
+planController ..> IllegalStateException : catches
+
+orderController --> orderServiceImpl : uses
+orderController --> orderStateServiceImpl : uses
+orderController --> Result : returns
+orderController --> ActionEnum : uses
+orderController --> JwtUtils : uses
+orderController ..> BusinessException : catches
+orderController ..> SecurityException : catches
+orderController ..> IllegalStateException : catches
+
+workOrderController --> workOrderStateServiceImpl : uses
+workOrderController --> Result : returns
+workOrderController --> ActionEnum : uses
+workOrderController --> JwtUtils : uses
+workOrderController ..> BusinessException : catches
+workOrderController ..> SecurityException : catches
+workOrderController ..> IllegalStateException : catches
+
+' ---- planServiceImpl 依赖 ----
+planServiceImpl --> planMapper : uses
+planServiceImpl --> Plan : uses
+planServiceImpl --> StateEnum : uses
+planServiceImpl ..> BusinessException : throws
+
+' ---- planStateServiceImpl 依赖 ----
+planStateServiceImpl --> planStateMachine : uses
+planStateServiceImpl --> planPermissionPolicy : uses
+planStateServiceImpl --> GatePolicy : uses
+planStateServiceImpl --> AuditService : uses
+planStateServiceImpl --> planMapper : uses
+planStateServiceImpl --> orderMapper : uses
+planStateServiceImpl --> processFlowMapper : uses
+planStateServiceImpl --> lineMapper : uses
+planStateServiceImpl --> workOrderMapper : uses
+planStateServiceImpl --> Plan : uses
+planStateServiceImpl --> ProductionOrder : creates
+planStateServiceImpl --> WorkOrder : uses
+planStateServiceImpl --> StateContext : creates
+planStateServiceImpl --> ActionEnum : uses
+planStateServiceImpl --> StateEnum : uses
+planStateServiceImpl ..> BusinessException : throws
+
+' ---- orderStateServiceImpl 依赖 ----
+orderStateServiceImpl --> orderStateMachine : uses
+orderStateServiceImpl --> orderPermissionPolicy : uses
+orderStateServiceImpl --> GatePolicy : uses
+orderStateServiceImpl --> AuditService : uses
+orderStateServiceImpl --> orderMapper : uses
+orderStateServiceImpl --> planStateServiceImpl : uses
+orderStateServiceImpl --> processFlowMapper : uses
+orderStateServiceImpl --> processMapper : uses
+orderStateServiceImpl --> userMapper : uses
+orderStateServiceImpl --> lineMapper : uses
+orderStateServiceImpl --> workOrderStateServiceImpl : uses
+orderStateServiceImpl --> ProductionOrder : uses
+orderStateServiceImpl --> WorkOrder : creates
+orderStateServiceImpl --> StateContext : creates
+orderStateServiceImpl --> ActionEnum : uses
+orderStateServiceImpl --> StateEnum : uses
+
+' ---- workOrderStateServiceImpl 依赖 ----
+workOrderStateServiceImpl --> workOrderStateMachine : uses
+workOrderStateServiceImpl --> workOrderPermissionPolicy : uses
+workOrderStateServiceImpl --> AuditService : uses
+workOrderStateServiceImpl --> workOrderMapper : uses
+workOrderStateServiceImpl --> orderMapper : uses
+workOrderStateServiceImpl --> planStateServiceImpl : uses
+workOrderStateServiceImpl --> userMapper : uses
+workOrderStateServiceImpl --> WorkOrder : uses
+workOrderStateServiceImpl --> StateContext : creates
+workOrderStateServiceImpl --> ActionEnum : uses
+workOrderStateServiceImpl --> StateEnum : uses
+workOrderStateServiceImpl ..> SecurityException : throws
+workOrderStateServiceImpl ..> BusinessException : throws
+
+' ---- 策略实现依赖 ----
+planPermissionPolicy --> userMapper : uses
+planPermissionPolicy --> ActionEnum : uses
+planPermissionPolicy ..> SecurityException : throws
+
+orderPermissionPolicy --> userMapper : uses
+orderPermissionPolicy --> ActionEnum : uses
+orderPermissionPolicy ..> SecurityException : throws
+
+workOrderPermissionPolicy --> userMapper : uses
+workOrderPermissionPolicy --> ActionEnum : uses
+workOrderPermissionPolicy ..> SecurityException : throws
+
+GatePolicy --> planMapper : uses
+GatePolicy --> processFlowMapper : uses
+GatePolicy --> lineMapper : uses
+GatePolicy --> processMapper : uses
+GatePolicy --> userMapper : uses
+GatePolicy --> StateContext : uses
+GatePolicy --> Plan : uses
+GatePolicy ..> BusinessException : throws
+
+' ---- 审计服务依赖 ----
+AuditService --> auditMapper : uses
+AuditService --> StateContext : uses
+AuditService --> StateEnum : uses
+
+' ---- orderServiceImpl 依赖 ----
+orderServiceImpl --> orderMapper : uses
+
+' ---- 三层联动关系（核心） ----
+planStateServiceImpl --> orderMapper : 下发/查询 Order
+planStateServiceImpl --> workOrderMapper : 级联操纵 WorkOrder
+orderStateServiceImpl --> planStateServiceImpl : 调用 syncPlanStatusFromOrders (上行)
+orderStateServiceImpl --> workOrderStateServiceImpl : 调用 handle (自动发布工单)
+workOrderStateServiceImpl --> planStateServiceImpl : 调用 syncPlanStatusFromOrders (上行)
+
+@enduml

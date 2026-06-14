@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xtax.mapper.equipmentMapper">
+<!--    条件分页查询设备信息-->
+    <select id="getAllEquipment" resultType="com.xtax.entity.Equipment">
+        SELECT * FROM equipment_info
+        <where>
+            <if test="name != null and name != ''">
+                AND name LIKE CONCAT('%', #{name}, '%')
+            </if>
+            <if test="type != null and type != ''">
+                AND type LIKE CONCAT('%', #{type}, '%')
+            </if>
+            <if test="model != null and model != ''">
+                AND model LIKE CONCAT('%', #{model}, '%')
+            </if>
+        </where>
+        ORDER BY production_date DESC
+    </select>
+
+    <!--    根据id查询设备信息-->
+    <resultMap id="equip" type="com.xtax.entity.Equipment">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="type" column="type"/>
+        <result property="model" column="model"/>
+        <result property="productionDate" column="production_date"/>
+        <result property="manufacturer" column="manufacturer"/>
+        <collection property="description" ofType="com.xtax.entity.FunctionDescription">
+            <id property="id" column="functionId"/>
+            <result property="functionDescription" column="function_description"/>
+        </collection>
+    </resultMap>
+    <select id="getEquipmentById" resultMap="equip">
+        select e.*,ef.id as functionId, ef.function_description from equipment_info e
+            left join equipment_functions ef on e.id = ef.equipment_info_id where e.id=#{id}
+    </select>
+<!--    批量删除设备信息-->
+    <delete id="deleteEquipment">
+        delete from equipment_info where id in
+        <foreach item="id" collection="ids" separator="," open="(" close=")">
+            #{id}
+        </foreach>
+    </delete>
+<!--    根据条件修改设备信息-->
+    <update id="updateEquipment">
+        update equipment_info
+        <set>
+            <if test="name != null and name != ''">name = #{name},</if>
+            <if test="type != null and type != ''">type = #{type},</if>
+            <if test="model != null and model != ''">model = #{model},</if>
+            <if test="productionDate != null">production_date = #{productionDate},</if>
+            <if test="manufacturer != null and manufacturer != ''">manufacturer = #{manufacturer}</if>
+        </set>
+        where id = #{id}
+    </update>
+</mapper>

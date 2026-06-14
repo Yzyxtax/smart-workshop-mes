@@ -1,0 +1,56 @@
+# 创建的文件
+
+# 实体类（4个）
+Role.java
+Permission.java
+UserRole.java
+RolePermission.java
+
+# DTO类（3个）
+RoleQueryParam.java
+AssignRoleDTO.java
+AssignPermissionDTO.java
+
+# VO类（3个）
+RoleVO.java
+PermissionVO.java
+UserPermissionVO.java
+
+# Mapper接口（4个）
+RoleMapper.java
+PermissionMapper.java
+UserRoleMapper.java
+RolePermissionMapper.java
+
+# Mapper XML文件（4个）
+RoleMapper.xml
+PermissionMapper.xml
+UserRoleMapper.xml
+RolePermissionMapper.xml
+
+# Service接口和实现类（10个）
+RoleService.java
+RoleServiceImpl.java
+PermissionService.java
+PermissionServiceImpl.java
+UserRoleService.java
+UserRoleServiceImpl.java
+RolePermissionService.java
+RolePermissionServiceImpl.java
+AuthService.java
+AuthServiceImpl.java
+
+# Controller类（5个）
+RoleController.java
+PermissionController.java
+UserRoleController.java
+RolePermissionController.java
+AuthController.java
+
+# 权限注解和拦截器（3个）
+RequirePermission.java
+Logical.java
+PermissionInterceptor.java
+
+# 配置类（1个）
+WebConfig.java

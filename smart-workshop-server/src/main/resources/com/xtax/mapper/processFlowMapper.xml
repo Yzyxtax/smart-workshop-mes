@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xtax.mapper.processFlowMapper">
+    <!--  查询工序信息  -->
+    <select id="getProcessNameByFlowId" resultType="java.util.HashMap">
+        select id,process_name from processes
+                               where id in
+                                     (select process_id from process_flow_processes where process_flow_id = #{flowId})
+    </select>
+    
+    <!--  查询顺序信息  -->
+    <select id="getProcessOrderByFlowId" resultType="java.util.HashMap">
+        select process_id, previous_process_id from process_sequences where process_flow_id = #{flowId}
+    </select>
+
+    <!--  删除顺序信息  -->
+    <delete id="deleteProcessSequence">
+        delete from process_sequences where process_flow_id = #{processFlowId}
+    </delete>
+    <!--  删除工序信息  -->
+    <delete id="deleteProcessFlowProcesses">
+        delete from process_flow_processes where process_flow_id = #{processFlowId}
+    </delete>
+    <!--  添加工序信息  -->
+    <insert id="insertProcessFlowProcesses">
+        insert into process_flow_processes(process_flow_id, process_id) values
+        <foreach item="processId" collection="processIdList" separator=",">
+            (#{flowId},#{processId})
+        </foreach>
+    </insert>
+
+    <!--  添加工艺流程信息  -->
+    <insert id="addProcessFlow">
+        insert into process_flows(bom_id, flow_name, status, planned_working_hours) values(#{bomId},#{flowName},#{status},#{plannedWorkingHours})
+    </insert>
+
+    <!--  更新工艺流程信息  -->
+    <update id="updateProcessFlow">
+        update process_flows <set>
+        <if test="bomId != null">
+            bom_id = #{bomId},
+        </if>
+        <if test="flowName != null">
+            flow_name = #{flowName},
+        </if>
+        <if test="status != null">
+            status = #{status},
+        </if>
+        <if test="plannedWorkingHours != null">
+            planned_working_hours = #{plannedWorkingHours}
+        </if>
+    </set>
+        where id = #{id}
+    </update>
+
+    <!--  删除工艺流程信息  -->
+    <delete id="deleteProcessFlow">
+        delete from process_flows where id = #{id}
+    </delete>
+</mapper>

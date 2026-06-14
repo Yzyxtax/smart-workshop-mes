@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xtax.mapper.orderMapper">
+    <!--  添加生产订单  -->
+    <insert id="addOrder">
+        insert into production_order
+        (order_no, plan_no, line_no, order_name, quantity, quantity_produced, qualified_products, defective_products, status, remark, actual_start_time, actual_end_time, start_time, end_time, create_time, update_time)
+        value
+        (#{orderNo}, #{planNo}, #{lineNo}, #{orderName}, #{quantity}, 0, 0, 0, 'CREATED', #{remark}, null, null, #{startTime}, #{endTime}, now(), now())
+    </insert>
+
+    <!--  按状态感知规则更新订单（动态 SQL）  -->
+    <!--  调用方需在 Service 层确保只传入当前状态下允许修改的字段  -->
+    <update id="updateOrder">
+        update production_order
+        <set>
+            <if test="orderName != null">order_name = #{orderName},</if>
+            <if test="lineNo != null">line_no = #{lineNo},</if>
+            <if test="planNo != null">plan_no = #{planNo},</if>
+            <if test="quantity != null">quantity = #{quantity},</if>
+            <if test="startTime != null">start_time = #{startTime},</if>
+            <if test="endTime != null">end_time = #{endTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="actualStartTime != null">actual_start_time = #{actualStartTime},</if>
+            <if test="actualEndTime != null">actual_end_time = #{actualEndTime},</if>
+            update_time = now()
+        </set>
+        where order_no = #{orderNo}
+    </update>
+</mapper>

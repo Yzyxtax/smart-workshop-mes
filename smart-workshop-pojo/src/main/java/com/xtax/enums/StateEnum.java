@@ -1,0 +1,79 @@
+package com.xtax.enums;
+
+import lombok.Getter;
+
+@Getter
+public enum StateEnum {
+
+    CREATED("CREATED", "创建"),
+
+    RELEASED("RELEASED", "发布"),
+
+    RUNNING("RUNNING", "执行"),
+
+    PAUSED("PAUSED", "暂停"),
+
+    COMPLETED("COMPLETED", "完成"),
+
+    TERMINATED("TERMINATED", "作废");
+
+    private final String code;
+    private final String desc;
+
+    StateEnum(String code, String desc) {
+        this.code = code;
+        this.desc = desc;
+    }
+
+    /**
+     * 是否为终态（COMPLETED / TERMINATED），终态订单/工单不再参与级联操作
+     */
+    public boolean isTerminal() {
+        return this == COMPLETED || this == TERMINATED;
+    }
+
+    /**
+     * 是否为执行前状态（CREATED / RELEASED），此类订单从未进入执行态，不参与 PAUSED 聚合判定
+     */
+    public boolean isPreExecution() {
+        return this == CREATED || this == RELEASED;
+    }
+
+    public StateEnum next(ActionEnum action) {
+        switch (this) {
+            case CREATED:
+                if (action == ActionEnum.PUBLISH) {
+                    return RELEASED;
+                }
+                break;
+            case RELEASED:
+                if (action == ActionEnum.CANCEL_PUBLISH) {
+                    return CREATED;
+                } else if (action == ActionEnum.START_WORK) {
+                    return RUNNING;
+                } else if (action == ActionEnum.TERMINATE) {
+                    return TERMINATED;
+                }
+                break;
+            case RUNNING:
+                if (action == ActionEnum.PAUSE) {
+                    return PAUSED;
+                } else if (action == ActionEnum.FINISH_WORK) {
+                    return COMPLETED;
+                }
+                break;
+            case PAUSED:
+                if (action == ActionEnum.RESUME) {
+                    return RUNNING;
+                } else if (action == ActionEnum.TERMINATE) {
+                    return TERMINATED;
+                }
+                break;
+            case COMPLETED:
+                break;
+            case TERMINATED:
+                break;
+        }
+        throw new IllegalStateException("状态 " + this + " 无法执行动作 " + action);
+    }
+}
