@@ -3,10 +3,10 @@
 # ==========================================
 ai:
   llm:
-    provider: claude                                    # claude | openai | custom
-    api-key: ${AI_API_KEY:}                             # ★ 必须通过环境变量注入
-    model: claude-opus-4-8
-    base-url: https://api.anthropic.com
+    provider: openai                                    # claude | openai | deepseek（兼容 OpenAI 协议）
+    api-key: ${ANTHROPIC_AUTH_TOKEN:}                             # ★ 必须通过环境变量注入（DeepSeek API Key）
+    model: deepseek-chat                                # deepseek-chat | deepseek-reasoner
+    base-url: https://api.deepseek.com
     connect-timeout: 10s                                # TCP 连接超时
     read-timeout: 60s                                   # 响应读取超时
     max-tokens: 4096                                    # 单次最大输出 token

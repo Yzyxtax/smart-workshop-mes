@@ -13,7 +13,7 @@
         </where>
         order by updated_at desc
         <if test="page != null and pageSize != null and page > 0 and pageSize > 0">
-            LIMIT #{pageSize} OFFSET #{(page - 1) * pageSize}
+            LIMIT #{pageSize} OFFSET #{offset}
         </if>
     </select>
 
